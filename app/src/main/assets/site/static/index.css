@@ -1,0 +1,67 @@
+.dcs-8415668d-0 {
+  cursor: pointer;
+  color: blue;
+}
+.dcs-8415668d-1 {
+  background-color: #edf2f7;
+  border: 2px dashed #cbd5e0;
+  width: 100%;
+  height: 100%;
+}
+.dcs-2e988578-0 {
+  margin: 0;
+  padding: 0;
+  overflow-y: scroll;
+}
+.dcs-2e988578-1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-begin;
+  align-items: center;
+  margin: 0;
+  width: 100%;
+  height: 100vh;
+  background-image: linear-gradient(90deg, rgba(62, 68, 74, 0.5), rgba(192, 192, 192, 0.4), rgba(91, 96, 105, 0.5)), repeating-linear-gradient(0deg, rgba(1, 5, 8, 0.26), rgba(189, 189, 189, 0.4) 2.5px), repeating-linear-gradient(0deg, rgba(2, 23, 38, 0.32), rgba(192, 192, 192, 0.4) 2.7px), repeating-linear-gradient(0deg, rgba(58, 65, 71, 0.60), rgba(224, 226, 227, 0.3) 3.0px), repeating-linear-gradient(0deg, rgba(91, 95,  98, 0.5), rgba(55, 170, 233, 0.26) 4.5px);
+}
+.dcs-2e988578-2 {
+  background-color: black;
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  flex-direction: row;
+  align-items: center;
+  padding-top: 1em;
+  padding-bottom: 1em;
+  padding-left: 1em;
+  padding-right: 1em;
+}
+.dcs-2e988578-3 {
+
+}
+.dcs-2e988578-4 {
+  display: none;
+}
+.dcs-2e988578-5 {
+  text-shadow: -2px -2px 2px #FFFFFF;
+  font-size: 1em;
+}
+.dcs-2e988578-6 {
+  text-shadow: -2px -2px 2px #FFFFFF;
+  font-size: 2em;
+}
+.dcs-2e988578-7 {
+  text-shadow: -2px -2px 2px #FFFFFF;
+  font-size: 3em;
+}
+.dcs-2e988578-8 {
+  text-shadow: -2px -2px 2px #FFFFFF;
+  font-size: 5em;
+}
+.dcs-2e988578-9 {
+  justify-content: center;
+}
+.dcs-2e988578-10 {
+  justify-content: space-between;
+}

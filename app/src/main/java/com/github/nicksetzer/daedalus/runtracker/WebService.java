@@ -26,6 +26,8 @@ public class WebService extends Service {
 
     LocationManager m_location = null;
 
+    public Database m_database;
+
     private IBinder m_binder = new WebBinder();
 
     public WebService() {
@@ -35,6 +37,9 @@ public class WebService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        m_database = new Database(this);
+        m_database.connect();
     }
 
     @Override
@@ -92,7 +97,7 @@ public class WebService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         if (m_location == null) {
-            m_location = new LocationManager(this);
+            m_location = new LocationManager(this, m_database);
         }
 
         startForeground();
@@ -134,9 +139,15 @@ public class WebService extends Service {
     @Override
     public void onDestroy() {
 
+
         if (m_location != null) {
             m_location.close();
         }
+
+        if (m_database != null) {
+            m_database.close();
+        }
+
         super.onDestroy();
     }
 
@@ -170,5 +181,18 @@ public class WebService extends Service {
         public WebService getService() {
             return WebService.this;
         }
+    }
+
+    public String getRecords() {
+        return m_database.m_runsTable.getAllRecords().toString();
+    }
+
+    public void deleteRecord(long spk) {
+        m_database.m_runsTable.delete(spk);
+        return;
+    }
+
+    public String getRecord(long spk) {
+        return m_database.m_runsTable.getRecord(spk).toString();
     }
 }

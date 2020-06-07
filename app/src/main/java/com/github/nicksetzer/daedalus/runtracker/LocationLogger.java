@@ -4,11 +4,17 @@ package com.github.nicksetzer.daedalus.runtracker;
  * To access the run logs:
  *
  * adb shell
- * adb cd /storage/emulated/0/Android/data/com.github.nicksetzer.runtracker/files/runlog
+ * adb cd /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus.runtracker/files/runlog
+ *        /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus.runtracker/files/runlog
+ * adb pull /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus.runtracker/files/runlog/2020-06-01-*
+ *  2020-06-01-06-27-runlog.csv
  */
 
 import android.app.PendingIntent;
 import android.content.Context;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -16,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 public class LocationLogger {
@@ -23,8 +30,16 @@ public class LocationLogger {
     String m_base_dir;
     File m_log;
     OutputStream m_ostream;
+    Database m_database;
+    long m_startTime;
+    boolean m_enabled = true;
+    int m_year;
+    int m_month;
+    int m_day;
 
-    public LocationLogger(Context ctxt) {
+    public LocationLogger(Context ctxt, Database database) {
+
+        m_database = database;
 
         m_base_dir = ctxt.getExternalFilesDir(null)+ "/runlog";
 
@@ -35,15 +50,41 @@ public class LocationLogger {
 
     }
 
+    public long getStartTime() {
+        return m_startTime;
+    }
+
+    public String getPath() {
+        if (m_log != null) {
+            return m_log.getPath();
+        }
+        return "";
+    }
+
+    public void setEnabled(boolean enabled)
+    {
+        m_enabled = enabled;
+    }
+
     public void begin() {
 
         if (m_ostream != null) {
             end();
         }
 
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm");
         LocalDateTime now = LocalDateTime.now();
-        System.out.println();
+        //m_startTime = now.toEpochSecond(ZoneOffset.UTC);
+        m_startTime = System.currentTimeMillis() / 1000;
+
+        if (!m_enabled) {
+            return;
+        }
+
+        m_year = now.getYear();
+        m_month = now.getMonth().ordinal();
+        m_day = now.getDayOfMonth();
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm");
 
         String path = m_base_dir + "/" + dtf.format(now) + "-runlog.csv";
         Log.info("opening log file:", path);
@@ -59,20 +100,27 @@ public class LocationLogger {
 
     }
 
-    public void push(double lat, double lon, long abstime, long delta_t, double distance, boolean paused, boolean dropped) {
+    public void push(double lat, double lon, long abstime, long delta_t, double distance, long split, boolean paused, boolean dropped) {
+
+        Log.info("got here,", m_enabled, m_ostream == null);
+        if (!m_enabled) {
+            end();
+        }
 
         if (m_ostream == null) {
             return;
         }
 
         StringBuilder sb = new StringBuilder();
+        sb.append(abstime);
+        sb.append(", ");
+        sb.append(split);
+        sb.append(", ");
         sb.append(lat);
         sb.append(", ");
         sb.append(lon);
         sb.append(", ");
         sb.append(distance);
-        sb.append(", ");
-        sb.append(abstime);
         sb.append(", ");
         sb.append(delta_t);
         sb.append(", ");
@@ -90,7 +138,41 @@ public class LocationLogger {
 
     }
 
-    public void end() {
+    public void end(JSONObject status) {
+
+        double distance_m = 0;
+
+        try {
+            status.put("start_date", m_startTime);
+            status.put("end_date", System.currentTimeMillis() / 1000);
+            status.put("year", m_year);
+            status.put("month", m_month);
+            status.put("day", m_day);
+            status.put("log_path", getPath());
+            status.put("accurate", status.getBoolean("accurate")?1:0);
+
+            distance_m = status.getDouble("distance");
+
+        } catch (JSONException e) {
+            Log.error("json error", e);
+        }
+
+        Log.error(status.toString());
+
+        if (distance_m < 500.0) {
+            Log.error("weak");
+        }
+
+        if (m_enabled) {
+            Log.error("inserting record");
+            m_database.m_runsTable.insert(status);
+        }
+
+        end();
+    }
+
+    private void end() {
+
         if (m_ostream != null) {
             try {
                 Log.info("closing log file:", m_log.getPath());

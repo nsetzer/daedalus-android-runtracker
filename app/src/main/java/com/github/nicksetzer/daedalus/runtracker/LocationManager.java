@@ -70,6 +70,7 @@ public class LocationManager {
 
     android.location.LocationManager locationManager;
     WebService m_service;
+    Database m_database;
 
     private long minTimeMs = 2000;
     private float minDistanceMeters = 0.0F;
@@ -86,13 +87,14 @@ public class LocationManager {
     Thread m_test_thread;
     boolean m_test_thread_alive = false;
 
-    public LocationManager(WebService service) {
+    public LocationManager(WebService service, Database database) {
         m_service = service;
+        m_database = database;
 
         locationManager = (android.location.LocationManager) service.getSystemService(Context.LOCATION_SERVICE);
         //m_trackerGps = new LocationTracker(1);
         //m_trackerNetwork = new LocationTracker(2);
-        m_trackerBest = new LocationTracker(m_service,3);
+        m_trackerBest = new LocationTracker(m_service,m_database, 3);
 
         //locationListenerGPS = new WebLocationListener(service, m_trackerGps);
         //locationListenerNetwork = new WebLocationListener(service, m_trackerNetwork);

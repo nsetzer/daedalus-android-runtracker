@@ -18,9 +18,9 @@ public class WebLocationListener implements LocationListener {
         double lat = location.getLatitude();
         double lon = location.getLongitude();
         m_tracker.push(lat, lon);
-        if (!m_tracker.isPaused()) {
-            m_service.sendEvent("onlocationupdate", m_tracker.status());
-        }
+        //if (!m_tracker.isPaused()) {
+        m_service.sendEvent("onlocationupdate", m_tracker.status());
+        //}
     }
 
     @Override

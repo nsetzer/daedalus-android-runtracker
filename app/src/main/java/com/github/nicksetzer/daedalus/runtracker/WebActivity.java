@@ -50,7 +50,7 @@ public class WebActivity extends Activity {
         view.addJavascriptInterface(m_storage, "LocalStorage");
         view.addJavascriptInterface(new AndroidClient(this), "Client");
 
-        //view.getSettings().setAllowUniversalAccessFromFileURLs(true);
+        view.getSettings().setAllowUniversalAccessFromFileURLs(true);
 
         view.loadUrl("file:///android_asset/site/index.html");
 

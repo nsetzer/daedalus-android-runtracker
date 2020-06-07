@@ -13,7 +13,10 @@ public class LocationTracker {
     private static final double R = 6371e3;
     private static final double PI = Math.PI;
     private static final double DEG2RAD = PI/180.0;
-    private static final double MIN_DELTA_M = 2.5;
+    private static final double MIN_DELTA_M = 2.0;
+
+    final double epsilon = 1e-6;
+    final double pace_maximum_spm = 4.0;
 
     private double m_current_lat = 0;
     private double m_current_lon = 0;
@@ -24,34 +27,41 @@ public class LocationTracker {
     private long m_dropped_event_counter = 0;
 
     private long m_time_start = 0;
+    private long m_end_time = 0;
     private long m_time_elapsed = 0;
+
+    private long m_current_split = 0;
 
     private long m_uid = 0;
     private boolean m_paused = false;
     private boolean m_isAccurate = false;
-    private boolean m_loggingEnabled = false;
 
     LocationLogger m_logger;
 
     private CurrentPaceTracker m_paceTracker;
 
-    public LocationTracker(Context ctxt, long uid) {
+    private Database m_database;
+
+    public LocationTracker(Context ctxt, Database database, long uid) {
         m_uid = uid;
         m_paceTracker = new CurrentPaceTracker();
+        m_database = database;
 
-        m_logger = new LocationLogger(ctxt);
+        m_logger = new LocationLogger(ctxt, database);
     }
 
     public void enableLogging(boolean enabled) {
         Log.info("set logging enabled: " + enabled);
-        m_loggingEnabled = enabled;
+        m_logger.setEnabled(enabled);
     }
 
     public void setAccurate(boolean isAccurate) {
+        // true when GPS is used for location updates
         m_isAccurate = isAccurate;
     }
 
     public boolean isPaused() {
+        // true when the user has paused location tracking
         return m_paused;
     }
 
@@ -85,20 +95,26 @@ public class LocationTracker {
         m_time_elapsed = 0;
         m_paused = false;
 
+        m_current_split = 0;
+
         m_paceTracker.reset();
         Log.info("reset tracker");
     }
 
     public void begin() {
-        if (m_loggingEnabled) {
-            m_logger.begin();
-        }
+        m_logger.begin();
     }
+
     public void end() {
+
+        JSONObject status = jsonStatus();
+
+
+
+        //m_database.m_runsTable.insert(status);
+        m_logger.end(status);
+
         reset();
-        if (m_loggingEnabled) {
-            m_logger.end();
-        }
     }
 
     public void push(double lat, double lon) {
@@ -123,9 +139,11 @@ public class LocationTracker {
             m_dropped_event_counter += 1;
         }
 
-        if (m_loggingEnabled) {
-            m_logger.push(lat, lon, current_time, delta_t, distance, m_paused, m_paused || drop);
-        }
+        //if (m_loggingEnabled) {
+        m_logger.push(lat, lon, current_time, delta_t, distance, m_current_split, m_paused, m_paused || drop);
+        //}
+
+        m_paceTracker.push(distance, delta_t);
 
         if (m_paused || drop) {
             return;
@@ -138,25 +156,31 @@ public class LocationTracker {
             m_time_start = current_time;
 
         } else {
-            m_paceTracker.push(distance, delta_t);
+
             m_total_distance_meters += distance;
         }
 
         return;
     }
 
-    public String status() {
+    public long getTotalElapsedTime() {
+        long elapsed = m_time_elapsed;
+
+        if (m_time_start > 0) {
+            elapsed = ((m_end_time > 0)?m_end_time:System.currentTimeMillis()) - m_time_start;
+        }
+
+        if (elapsed < 0) {
+            elapsed = 0;
+        }
+
+        return elapsed;
+    }
+
+    public JSONObject jsonStatus() {
         JSONObject obj = new JSONObject();
         try {
-            long elapsed = 0;
-
-            if (m_time_start > 0) {
-                elapsed = m_time_elapsed + (System.currentTimeMillis() - m_time_start);
-            }
-
-            if (elapsed < 0) {
-                elapsed = 0;
-            }
+            long elapsed = getTotalElapsedTime();
 
             obj.put("uid", m_uid);
             obj.put("paused", m_paused);
@@ -167,9 +191,14 @@ public class LocationTracker {
             obj.put("dropped_samples", m_dropped_event_counter);
             obj.put("accurate", m_isAccurate);
             obj.put("current_pace_spm", m_paceTracker.current_pace());
+            obj.put("num_splits", 1 + m_current_split);
 
-            if (m_total_distance_meters > 0) {
-                obj.put("average_pace_spm", (elapsed / 1000.0) / m_total_distance_meters);
+            if (m_total_distance_meters > epsilon) {
+                double spm = (elapsed / 1000.0) / m_total_distance_meters;
+                if (spm > pace_maximum_spm) {
+                    spm = pace_maximum_spm;
+                }
+                obj.put("average_pace_spm", spm);
             } else {
                 obj.put("average_pace_spm", 0.0);
             }
@@ -178,7 +207,12 @@ public class LocationTracker {
         } catch (JSONException e) {
             Log.error("json format error", e);
         }
-        return obj.toString();
+
+        return obj;
+    }
+
+    public String status() {
+        return jsonStatus().toString();
     }
 
     public double calculateDistanceMeters(double lat1, double lon1, double lat2, double lon2) {
@@ -207,6 +241,7 @@ public class LocationTracker {
         final double[] scale = {0.5, 0.5, 1.0, 1.0, 2.0};
         final double scale_magnitude = 5.0; //sum of scale
 
+
         List<Double> m_points;
         double m_current_pace_spm; // pace in seconds per meter
 
@@ -220,13 +255,25 @@ public class LocationTracker {
             m_current_pace_spm = 0.0;
         }
 
+
+
         public void clear() {
             m_points.clear();
         }
 
         public void push(double distance, double delta_t) {
 
-            m_points.add((delta_t / 1000)/distance);
+            if (distance < epsilon) {
+                return;
+            }
+
+            double spm = (delta_t / 1000)/distance;
+
+            if (spm > pace_maximum_spm) {
+                spm = pace_maximum_spm;
+            }
+
+            m_points.add(pace_maximum_spm);
 
             while (m_points.size() > 5) {
                 m_points.remove(0);

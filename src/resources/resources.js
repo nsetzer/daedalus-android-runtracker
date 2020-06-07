@@ -7,6 +7,11 @@ const svg_icon_names = [
     "button_play",
     "button_pause",
     "button_stop",
+    "button_split",
+    "gear",
+    "shoe",
+    "whiteshoe",
+    "back",
 ];
 
 export const svg = {};

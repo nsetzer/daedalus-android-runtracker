@@ -11,6 +11,18 @@ build:
 			./src/app.js \
 			./app/src/main/assets/site
 
+.PHONY: minify
+minify:
+	source venv/bin/activate && python -V && \
+		PYTHONPATH='./daedalus' \
+		python -m daedalus build \
+			--minify \
+			--platform android \
+			--static ./resources \
+			./src/app.js \
+			./app/src/main/assets/site
+
+
 .PHONY: serve
 serve:
 	source venv/bin/activate && python -V && \

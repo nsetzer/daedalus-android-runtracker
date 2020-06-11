@@ -9,6 +9,44 @@ const meters_per_mile = 1609.34
 const spm_to_mpk = 1000.0 / 60.0 // minutes per kilomter
 const spm_to_mpm = meters_per_mile / 60.0  // minutes per mile
 
+const spm_color_map_blue_green = [
+    "#A0A0A0",  // -: ---
+    "#000080",  // 0: 0.1
+    "#002060",  // 1: 0.2
+    "#004040",  // 2: 0.3
+    "#006020",  // 3: 0.4
+    "#008000",  // 4: 0.5
+    "#006600",  // 5: 0.6
+    "#004D00",  // 6: 0.7
+    "#003300",  // 7: 0.8
+    "#001A00",  // 8: 0.9
+    "#000000",  // 9: 1.0
+]
+
+const spm_color_map_autumn = [
+    "#A0A0A0",  // -: ---
+    "#FFFF00",  // 0: 0.1
+    "#FFDF00",  // 1: 0.2
+    "#FFC000",  // 2: 0.3
+    "#FFA000",  // 3: 0.4
+    "#EF7800",  // 4: 0.5
+    "#E05000",  // 5: 0.6
+    "#D02800",  // 6: 0.7
+    "#C00000",  // 7: 0.8
+    "#600000",  // 8: 0.9
+    "#000000",  // 9: 1.0
+]
+
+const spm_color_map = spm_color_map_autumn;
+
+function spm_get_color(spm) {
+    const v = Math.floor(spm * 10)
+    if (v >= spm_color_map.length) {
+        return "#000000"
+    }
+    return spm_color_map[v]
+}
+
 const style = {
     body: StyleSheet({
         margin:0,
@@ -173,11 +211,60 @@ const style = {
     }),
 
     map: StyleSheet({
-        height: "75vh",
+        height: "70vh",
         width: "calc(100% - 2px)",
         margin-top: "-1em",
         border: {style: "solid", width: "1px"},
     }),
+
+    trackBar: StyleSheet({
+        position: "relative",
+        height: "1em",
+        max-height: "1em",
+        min-height: "1em",
+        width:"calc(100% - 2em)",
+        "margin-top": "1em",
+        "padding": "1em"
+    }),
+
+    trackBar_bar: StyleSheet({
+        position: "absolute",
+        height: ".3em",
+        max-height: ".3em",
+        min-height: ".3em",
+        //width:"100%",
+        top: "1.35em",
+        left: "1em",
+        right: "1em",
+        background-color: "black",
+        border-radius: "1em",
+        border-width: "1px",
+        border-style: "solid",
+        border-color: "black",
+        user-select: "none",
+    }),
+
+    trackBar_button: StyleSheet({
+        position: "absolute",
+        height: ".5em",
+        max-height: ".5em",
+        min-height: ".5em",
+        width:"1em",
+        top: "1.25em",
+        border-width: "2px",
+        border-style: "solid",
+    }),
+
+    trackBar_button1: StyleSheet({
+        border-radius: "0 10px 10px 0",
+        background-color: "blue",
+        border-color: "blue",
+    }),
+    trackBar_button2: StyleSheet({
+        border-radius: "10px 0 0 10px",
+        background-color: "red",
+        border-color: "red",
+    })
 }
 
 function pad(n, width, z) {
@@ -527,7 +614,6 @@ class SettingsPage extends daedalus.DomElement {
             router.navigate(router.routes.landing())
         })
     }
-
 }
 
 class LogListItem extends daedalus.DomElement {
@@ -653,18 +739,18 @@ class LogPage extends daedalus.DomElement {
     }
 }
 
-
-
 class Map extends daedalus.DomElement {
 
     constructor() {
         super("div", {className: style.map}, [])
+        this.attrs.routes = []
 
     }
 
-    displayMap(points) {
-
-        this.attrs.map = L.map(this.props.id)
+    displayMap(bounds) {
+        console.log(bounds)
+        this.attrs.map = L.map(this.props.id)//.setView(pt, 15)
+        //this.attrs.map = L.map(this.props.id).setView([40.14083943, -74.19391519], 13)
 
         // .setView(point, zoom);
 
@@ -674,20 +760,357 @@ class Map extends daedalus.DomElement {
             maxZoom: 19
         }).addTo(this.attrs.map);
 
+        this.attrs.map.fitBounds(bounds);
+    }
 
-        this.attrs.route = L.polyline(points, {color: 'red'}).addTo(this.attrs.map);
+    displayRoute(segments) {
 
-        this.attrs.map.fitBounds(this.attrs.route.getBounds());
+        while (this.attrs.routes.length > 0) {
+            let route = this.attrs.routes.pop()
+            this.attrs.map.removeLayer(route)
+        }
 
-
+        this.attrs.routes = []
         /*
         L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             maxZoom: 17,
             attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
         }).addTo(this.attrs.map);
         */
+
+        /*
+        this.attrs.route = L.polyline(points, {color: 'red'}).addTo(this.attrs.map);
+        */
+        //try {
+            for (let i=0; i < segments.length; i++) {
+                let s = segments[i]
+
+                s = s.map(t => {return t.map(p=>{ return [p[0], p[1]] })})
+
+                if (s.length > 0) {
+
+                    let route = L.polyline(s, {color: spm_color_map[i], weight: 4}).addTo(this.attrs.map);
+                    this.attrs.routes.push(route)
+                    //console.log(route.getBounds())
+                }
+            }
+        //} catch (err) {
+        //    console.error("" + err);
+        //}
+
+        //this.attrs.map.fitBounds(this.attrs.route.getBounds());
+
+
+
+    }
+}
+
+class TrackBarTrack extends DomElement {
+    constructor() {
+        super("div", {className: style.trackBar_bar}, [])
+    }
+}
+
+class TrackBarButton extends DomElement {
+    constructor(extra_style) {
+        super("div", {className: [style.trackBar_button, extra_style]}, [])
+    }
+}
+
+class TrackBar extends DomElement {
+    constructor(callback) {
+        super("div", {className: style.trackBar}, [])
+
+        this.attrs = {
+            callback,
+            pressed: false,
+            posA: 0,
+            posB: 0,
+            maximum: 1.0,
+            tposA: 0,
+            tposB: 0,
+            startx: [0,0],
+            track: this.appendChild(new TrackBarTrack()),
+            btnMin: this.appendChild(new TrackBarButton(style.trackBar_button1)),
+            btnMax: this.appendChild(new TrackBarButton(style.trackBar_button2)),
+            active_btn: -1,
+        }
     }
 
+    setPosition(start, end, maximum=1.0) {
+        let posA = 0;
+        let posB = 0;
+
+        if (maximum > 0) {
+            posA = start;
+            posB = end;
+        }
+
+        if ( posA > posB) {
+            posA = posB
+        }
+
+        this.attrs.posA = posA;
+        this.attrs.posB = posB;
+        this.attrs.tposA = posA / maximum;
+        this.attrs.tposB = posB / maximum;
+        this.attrs.maximum = maximum;
+
+        const btnMin = this.attrs.btnMin.getDomNode();
+        const btnMax = this.attrs.btnMax.getDomNode();
+        const ele = this.attrs.track.getDomNode();
+
+        if (btnMin && ele) {
+            this._setPosition(btnMin, ele, this.attrs.tposA, 0)
+        }
+
+        if (btnMax && ele) {
+            this._setPosition(btnMax, ele, this.attrs.tposB, 1)
+        }
+    }
+
+    _setPosition(btn, ele, tpos, align) {
+
+        let offset = parseFloat(getComputedStyle(ele).fontSize)
+        let m2 = ele.clientWidth
+        let m1 = offset;
+
+        let x = m1 + tpos * m2
+
+        if (x > m2) {
+            x = m2;
+        } else if (x < m1) {
+            x = m1
+        }
+
+        this.attrs.startx[align] = Math.floor(x) + "px";
+        if (!this.attrs.pressed) {
+            btn.style.left = this.attrs.startx[align]
+        }
+    }
+
+    onMouseDown(event) {
+        this.trackingStart(event);
+        this.trackingMove(event);
+    }
+
+    onMouseMove(event) {
+        if (!this.attrs.pressed) {
+            return;
+        }
+        this.trackingMove(event);
+    }
+
+    onMouseLeave(event) {
+        if (!this.attrs.pressed) {
+            return;
+        }
+        this.trackingEnd(false);
+    }
+
+    onMouseUp(event) {
+        if (!this.attrs.pressed) {
+            return;
+        }
+        this.trackingMove(event);
+        this.trackingEnd(true);
+    }
+
+    onTouchStart(event) {
+        this.trackingStart(event);
+        this.trackingMove(event);
+    }
+
+    onTouchMove(event) {
+        if (!this.attrs.pressed) {
+            return;
+        }
+
+        this.trackingMove(event);
+    }
+
+    onTouchCancel(event) {
+        if (!this.attrs.pressed) {
+            return;
+        }
+        this.trackingEnd(false);
+    }
+
+    onTouchEnd(event) {
+        if (!this.attrs.pressed) {
+            return;
+        }
+        this.trackingMove(event);
+        this.trackingEnd(true);
+    }
+
+    trackingStart() {
+
+        const btnMin = this.attrs.btnMin.getDomNode();
+        const btnMax = this.attrs.btnMax.getDomNode();
+        this.attrs.startx[0] = btnMin.style.left
+        this.attrs.startx[1] = btnMax.style.left
+        this.attrs.pressed = true
+        this.attrs.active_btn = -1
+    }
+
+    trackingEnd(accept) {
+        const btnMin = this.attrs.btnMin.getDomNode();
+        const btnMax = this.attrs.btnMax.getDomNode();
+        const ele = this.attrs.track.getDomNode();
+        this.attrs.pressed = false
+        if (accept) {
+            let p1 = Math.floor(this.attrs.tposA * this.attrs.maximum)
+            let p2 = Math.floor(this.attrs.tposB * this.attrs.maximum)
+
+            this.attrs.posA = p1
+            this.attrs.posB = p2
+
+            //console.log(`assign a: ${this.attrs.tposA * ele.clientWidth} b: ${this.attrs.tposB * ele.clientWidth}`)
+
+            //console.log(`assign w: ${ele.clientWidth} a: ${btnMin.style.left} b: ${btnMax.style.left}`)
+
+            if (this.attrs.callback) {
+                this.attrs.callback(p1, p2)
+            }
+        } else {
+            btnMin.style.left = this.attrs.startx[0];
+            btnMax.style.left = this.attrs.startx[1];
+        }
+        this.attrs.active_btn = -1
+    }
+
+
+    trackingMove(event) {
+        let org_event = event;
+
+        let evt = (event?.touches || event?.originalEvent?.touches)
+        if (evt) {
+            event = evt[0]
+        }
+
+        if (!event) {
+            return
+        }
+
+        const btnMin = this.attrs.btnMin.getDomNode();
+        const btnMax = this.attrs.btnMax.getDomNode();
+        const ele = this.attrs.track.getDomNode();
+        const rect = ele.getBoundingClientRect();
+        let x = event.pageX - rect.left
+
+        if (this.attrs.active_btn == -1) {
+            let x1 = parseInt(btnMin.style.left, 10);
+            let x2 = parseInt(btnMax.style.left, 10);
+            let d1 = Math.abs(x - x1)
+            let d2 = Math.abs(x - x2)
+
+            if (d1 < d2) {
+                this.attrs.active_btn = 0
+            } else {
+                this.attrs.active_btn = 1
+            }
+        }
+
+        let btn;
+        if (this.attrs.active_btn===0) {
+            btn = btnMin;
+        } else {
+            btn = btnMax;
+        }
+
+        let offset = parseFloat(getComputedStyle(ele).fontSize)
+
+        let m2 = ele.clientWidth
+        let m1 = offset;
+
+        if (x > m2) {
+            x = m2;
+        } else if (x < m1) {
+            x = m1
+        }
+
+        let tpos = (m2 > 0 && x >= 0) ? (x - m1) / m2 : 0.0;
+        let pos = tpos * this.attrs.maximum
+
+        if (this.attrs.active_btn === 0) {
+
+            if (pos > this.attrs.posB) {
+                tpos = this.attrs.posB/this.attrs.maximum;
+            }
+            this.attrs.tposA = tpos
+        } else {
+            if (pos < this.attrs.posA) {
+                tpos = this.attrs.posA/this.attrs.maximum;
+
+            }
+            this.attrs.tposB = tpos
+        }
+
+        x = m1 + tpos * m2
+
+        btn.style.left = Math.floor(x) + "px";
+    }
+}
+
+function points2segments(points, start, end) {
+    const N_SEGMENTS = 10;
+    if (start === undefined || start < 0) {
+        start = 0
+    }
+    if (end === undefined || end > points.length) {
+        end = points.length
+    }
+
+    const segments = []
+    for (let i=0; i < N_SEGMENTS + 1; i++) {
+        segments.push([])
+    }
+
+    let point = null
+    let prev_point = null
+    let prev_index = -1
+    let current_segment = null
+
+    let distance = 0.0
+    let delta_t = 0
+
+    let i;
+    for (i=start; i < end; i++) {
+        let [lat, lon, index, d, t] = points[i]
+
+        point = [lat, lon]
+
+        if (index > 0) {
+            distance += d;
+            delta_t += t;
+        }
+
+        if (prev_index !== index) {
+            if (prev_point!==null) {
+                if (current_segment !== null && current_segment.length > 0) {
+                    segments[prev_index].push(current_segment)
+                }
+                current_segment = []
+                current_segment.push(prev_point)
+                current_segment.push(point)
+                prev_index = index;
+            }
+        } else if (current_segment !== null) {
+            current_segment.push(point)
+            prev_index = index;
+        }
+
+        prev_point = point;
+
+    }
+
+    if (current_segment !== null && current_segment.length > 0) {
+        segments[prev_index].push(current_segment)
+    }
+
+
+    return [distance, delta_t, segments]
 }
 
 class LogEntryPage extends daedalus.DomElement {
@@ -701,6 +1124,26 @@ class LogEntryPage extends daedalus.DomElement {
         })
 
         this.attrs.map = this.appendChild( new Map() );
+
+        this.attrs.lst = this.appendChild(new daedalus.DomElement("div", {className: style.logView}, []))
+
+        this.attrs.track = this.attrs.lst.appendChild( new TrackBar(this.handleUpdateData.bind(this)) );
+
+        this.attrs.txt_distance = new daedalus.TextElement('----')
+        this.attrs.txt_elapsed = new daedalus.TextElement('----')
+        this.attrs.txt_avg_pace = new daedalus.TextElement('----')
+
+        this.attrs.row2 = this.attrs.lst.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        this.attrs.row2.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`Distance:`)]))
+        this.attrs.row2.appendChild(new daedalus.DomElement("div", {}, [this.attrs.txt_distance]))
+
+        this.attrs.row3 = this.attrs.lst.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        this.attrs.row3.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`Elapsed Time:`)]))
+        this.attrs.row3.appendChild(new daedalus.DomElement("div", {}, [this.attrs.txt_elapsed]))
+
+        this.attrs.row4 = this.attrs.lst.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        this.attrs.row4.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`Average Pace:`)]))
+        this.attrs.row4.appendChild(new daedalus.DomElement("div", {}, [this.attrs.txt_avg_pace]))
 
     }
 
@@ -726,32 +1169,32 @@ class LogEntryPage extends daedalus.DomElement {
                 "average_pace_spm": .5,
                 "log_path": "",
                 points: [
-                    [40.14083943, -74.19391519],
-                    [40.14086841, -74.19383053],
-                    [40.1408948,  -74.19376247],
-                    [40.14090807, -74.19365078],
-                    [40.14092978, -74.19356402],
-                    [40.14096706, -74.19350611],
-                    [40.1410176,  -74.19346999],
-                    [40.14103311, -74.19339975],
-                    [40.1410394,  -74.19333502],
-                    [40.14105688, -74.19323857],
-                    [40.14107417, -74.19315472],
-                    [40.14110913, -74.19310623],
-                    [40.14112376, -74.19300117],
-                    [40.1411457,  -74.19292589],
-                    [40.14120261, -74.19282628],
-                    [40.14121468, -74.19274848],
-                    [40.14122987, -74.19268078],
-                    [40.14124932, -74.19260141],
-                    [40.14127192, -74.19253866],
-                    [40.14130083, -74.19247110],
-                    [40.1413298,  -74.19241849],
-                    [40.14137673, -74.19235618],
-                    [40.14142254, -74.19232219],
-                    [40.14148118, -74.19223102],
-                    [40.1415285,  -74.19216943],
-                ]
+                    [40.14083943, -74.19391519, -1, 2.0, 2000],
+                    [40.14086841, -74.19383053,  2, 2.0, 2000],
+                    [40.1408948,  -74.19376247,  2, 2.0, 2000],
+                    [40.14090807, -74.19365078,  2, 2.0, 2000],
+                    [40.14092978, -74.19356402,  2, 2.0, 2000],
+                    [40.14096706, -74.19350611,  2, 2.0, 2000],
+                    [40.1410176,  -74.19346999,  2, 2.0, 2000],
+                    [40.14103311, -74.19339975,  3, 2.0, 2000],
+                    [40.1410394,  -74.19333502,  3, 2.0, 2000],
+                    [40.14105688, -74.19323857,  3, 2.0, 2000],
+                    [40.14107417, -74.19315472,  3, 2.0, 2000],
+                    [40.14110913, -74.19310623,  3, 2.0, 2000],
+                    [40.14112376, -74.19300117,  4, 2.0, 2000],
+                    [40.1411457,  -74.19292589,  4, 2.0, 2000],
+                    [40.14120261, -74.19282628,  4, 2.0, 2000],
+                    [40.14121468, -74.19274848,  4, 2.0, 2000],
+                    [40.14122987, -74.19268078,  4, 2.0, 2000],
+                    [40.14124932, -74.19260141,  4, 2.0, 2000],
+                    [40.14127192, -74.19253866,  6, 2.0, 2000],
+                    [40.14130083, -74.19247110,  6, 2.0, 2000],
+                    [40.1413298,  -74.19241849,  6, 2.0, 2000],
+                    [40.14137673, -74.19235618,  6, 2.0, 2000],
+                    [40.14142254, -74.19232219,  6, 2.0, 2000],
+                    [40.14148118, -74.19223102,  6, 2.0, 2000],
+                    [40.1415285,  -74.19216943,  6, 2.0, 2000],
+                ],
             }
 
             this.setData(sample)
@@ -761,10 +1204,38 @@ class LogEntryPage extends daedalus.DomElement {
     setData(data) {
         if (data?.points?.length > 0) {
             this.attrs.data = data
-            this.attrs.map.displayMap(data.points)
-        } else {
-            // display an error, no data for entry
+            const [distance, delta_t, segments] = points2segments(data.points)
+            const bounds = L.latLngBounds(data.points.map(p => [p[0], p[1]]));
+
+            this.attrs.map.displayMap(bounds)
+            this.attrs.map.displayRoute(segments)
+            this.attrs.track.setPosition(0, data.points.length, data.points.length)
+
+            let pace = fmtTime(60 * (delta_t / distance) * spm_to_mpk)
+            let time = fmtTime(delta_t)
+            let dist = (distance/1000.0).toFixed(3) + " k"
+
+            this.attrs.txt_distance.setText(dist)
+            this.attrs.txt_elapsed.setText(time)
+            this.attrs.txt_avg_pace.setText(pace)
         }
+        else {
+            console.error("no data")
+        }
+    }
+
+    handleUpdateData(start, end) {
+        console.log("update", start, end, this.attrs.data.points.length)
+        let [distance, delta_t, segments] = points2segments(this.attrs.data.points, start, end)
+        this.attrs.map.displayRoute(segments)
+
+        let pace = fmtTime(60 * (delta_t / distance) * spm_to_mpk)
+        let time = fmtTime(delta_t)
+        let dist = (distance/1000.0).toFixed(3) + " k"
+
+        this.attrs.txt_distance.setText(dist)
+        this.attrs.txt_elapsed.setText(time)
+        this.attrs.txt_avg_pace.setText(pace)
     }
 }
 

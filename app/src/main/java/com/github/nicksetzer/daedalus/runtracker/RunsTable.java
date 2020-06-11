@@ -108,6 +108,7 @@ public class RunsTable extends EntityTable {
         try {
             String path = obj.getString("log_path");
             loadPoints(obj, path);
+            //loadSegments(obj, path);
         } catch (JSONException e) {
             Log.error("json format error", e);
         }
@@ -117,7 +118,10 @@ public class RunsTable extends EntityTable {
         return obj;
     }
 
-    private void loadPoints(JSONObject obj, String log_path) throws JSONException {
+    public static void loadPoints(JSONObject obj, String log_path) throws JSONException {
+
+        final int N_SEGMENTS = 10;
+        final int SPM_SCALE_FACTOR = 10;
 
         List<JSONArray> points = new ArrayList<>();
         List<JSONArray> distances = new ArrayList<>();
@@ -154,16 +158,31 @@ public class RunsTable extends EntityTable {
                     continue;
                 }
 
+                long split = Long.parseLong(parts[1].trim());
                 double lat = Double.parseDouble(parts[2].trim());
                 double lon = Double.parseDouble(parts[3].trim());
                 double distance = Double.parseDouble(parts[4].trim());
-                double delta_t = Long.parseLong(parts[5].trim());
-
+                long delta_t = Long.parseLong(parts[5].trim());
+                long dropped = Long.parseLong(parts[7].trim());
+                int index = -1;
+                if (dropped==1) {
+                    index = 0;
+                } else if (distance > 1e-6) {
+                    double spm = delta_t / 1000 / distance;
+                    index = (int) (spm * SPM_SCALE_FACTOR);
+                    if (index >= N_SEGMENTS) {
+                        index = N_SEGMENTS - 1;
+                    }
+                    index += 1;
+                }
 
                 JSONArray pt = new JSONArray();
 
                 pt.put(lat);
                 pt.put(lon);
+                pt.put(index);
+                pt.put(distance);
+                pt.put(delta_t);
 
                 points.add(pt);
 
@@ -180,4 +199,140 @@ public class RunsTable extends EntityTable {
 
         Log.info("loaded " + count + " points");
     }
+
+    public static void loadSegments(JSONObject obj, String log_path) throws JSONException {
+
+        final int N_SEGMENTS = 10;
+        final int N_BINS = N_SEGMENTS + 1;
+        final int SPM_SCALE_FACTOR = 10;
+
+        JSONArray pt;
+        JSONArray prev_pt = null;
+
+        int prev_index = -1;
+        double prev_lat;
+        double prev_lon;
+        int point_count = 0;
+        int segment_count = 0;
+
+        List<JSONArray> current_segment = null;
+
+        JSONArray[] segments = new JSONArray[N_BINS];
+        for (int i=0; i < N_BINS; i++) {
+            segments[i] = new JSONArray();
+        }
+
+        FileInputStream stream = null;
+        try {
+            stream = new FileInputStream(log_path);
+        } catch (FileNotFoundException e) {
+            Log.error(System.getProperty("user.dir"));
+            Log.error("file not found", log_path);
+            return;
+        }
+
+        if (stream == null) {
+            Log.error(System.getProperty("user.dir"));
+            Log.error("file not found", log_path);
+            return;
+        }
+
+        Log.info("reading file: " +log_path);
+
+        InputStreamReader streamReader = new InputStreamReader(stream);
+        BufferedReader reader = new BufferedReader(streamReader);
+
+        try {
+            String line = reader.readLine();
+
+            while (line != null && !line.equals("")) {
+
+
+                String[] parts = line.split(",");
+
+                if (parts.length < 4) {
+                    continue;
+                }
+
+                long split = Long.parseLong(parts[1].trim());
+                double lat = Double.parseDouble(parts[2].trim());
+                double lon = Double.parseDouble(parts[3].trim());
+                double distance = Double.parseDouble(parts[4].trim());
+                long delta_t = Long.parseLong(parts[5].trim());
+                long paused = Long.parseLong(parts[6].trim());
+                long dropped = Long.parseLong(parts[7].trim());
+                double spm = 0.0;
+                int index = -1;
+                if (distance > 1e-5) {
+                    spm = delta_t / 1000.0 / distance;
+
+                    index = ((int) (spm * SPM_SCALE_FACTOR));
+                    if (index >= N_SEGMENTS) {
+                        index = N_SEGMENTS - 1;
+                    }
+                    // index 0 is reserved for paused/dropped points
+                    index += 1;
+
+                }
+                //int index = (dropped!=0)?0:(1 + ((int) spm * SPM_SCALE_FACTOR));
+
+                pt = new JSONArray();
+                pt.put(lat);
+                pt.put(lon);
+                pt.put(split);
+                pt.put(point_count);
+                point_count+=1;
+                //Log.info("cnt" + point_count + " lat " + lat + " lon " + lon + " distance " + distance + " spm " + spm + " idx " + index);
+
+                if (prev_index != index) {
+
+                    if (distance > 1e-6) {
+                        if (current_segment != null && prev_index >= 0) {
+                            //Log.info("adding segment with " + current_segment.size() + " points to " + prev_index);
+                            segments[prev_index].put(new JSONArray(current_segment));
+                        }
+
+                        Log.info("new segment " + index + " spm:" + spm);
+                        current_segment = new ArrayList<>();
+                        segment_count += 1;
+                        if (prev_pt != null) {
+                            current_segment.add(prev_pt);
+                        }
+
+                        current_segment.add(pt);
+                    }
+                    // push a point onto a new segment
+                } else if (current_segment != null) {
+                    current_segment.add(pt);
+                    // create a new segment
+                    // push (prev_lat, prev_lon, segment_count++)
+                    // push (lat, lon, segment_count++)
+                }
+
+                prev_index = index;
+                prev_pt = pt;
+
+                line = reader.readLine();
+            }
+        } catch (IOException e) {
+            Log.error("ioerror", e);
+        }
+
+        if (current_segment != null && current_segment.size() > 1) {
+            Log.info("adding segment with " + current_segment.size() + " points to " + prev_index);
+            segments[prev_index].put(new JSONArray(current_segment));
+        }
+        JSONArray js_segments = new JSONArray();
+
+        for (int i=0; i < N_BINS; i++) {
+            js_segments.put(segments[i]);
+        }
+
+        obj.put("segments", js_segments);
+        obj.put("lat", prev_pt.get(0));
+        obj.put("lon", prev_pt.get(1));
+
+        Log.info("loaded " + point_count + " points, " + segment_count + " segments.");
+    }
+
 }

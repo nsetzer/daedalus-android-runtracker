@@ -1370,7 +1370,7 @@ resources=(function(daedalus){
     const platform_prefix=daedalus.platform.isAndroid?"file:///android_asset/site/static/icon/":"/static/icon/";
     
     const svg_icon_names=["button_play","button_pause","button_stop","button_split",
-          "gear","shoe","whiteshoe","back"];
+          "gear","shoe","whiteshoe","back","marker_R","marker_L"];
     const svg={};
     svg_icon_names.forEach(name=>{
         svg[name]=platform_prefix+name+".svg";
@@ -1427,9 +1427,9 @@ app=(function(daedalus,resources,router){
           smallText:'dcs-2e988578-12',mediumText:'dcs-2e988578-13',largeText:'dcs-2e988578-14',
           flex_center:'dcs-2e988578-15',flex_spread:'dcs-2e988578-16',logView:'dcs-2e988578-17',
           logItem:'dcs-2e988578-18',logItemRowTitle:'dcs-2e988578-19',logItemRowInfo:'dcs-2e988578-20',
-          logItemActions:'dcs-2e988578-21',map:'dcs-2e988578-22',trackBar:'dcs-2e988578-23',
-          trackBar_bar:'dcs-2e988578-24',trackBar_button:'dcs-2e988578-25',trackBar_button1:'dcs-2e988578-26',
-          trackBar_button2:'dcs-2e988578-27'};
+          logItemActions:'dcs-2e988578-21',logEntryView:'dcs-2e988578-22',map:'dcs-2e988578-23',
+          trackBar:'dcs-2e988578-24',trackBar_bar:'dcs-2e988578-25',trackBar_button:'dcs-2e988578-26'};
+    
     function pad(n,width,z){
       z=z||'0';
       n=n+'';
@@ -1734,6 +1734,9 @@ app=(function(daedalus,resources,router){
         this.attrs.row5.appendChild(new daedalus.ButtonElement("Delete",this.handleDeleteClicked.bind(
                           this)));
         this.attrs.row5.appendChild(new daedalus.DomElement("div"));
+        this.attrs.row5.appendChild(new daedalus.ButtonElement("Export",this.handleShareClicked.bind(
+                          this)));
+        this.attrs.row5.appendChild(new daedalus.DomElement("div"));
         this.attrs.row5.appendChild(new daedalus.ButtonElement("Details",this.handleDetailsClicked.bind(
                           this)));
         this.attrs.row5.appendChild(new daedalus.DomElement("div"));
@@ -1743,6 +1746,11 @@ app=(function(daedalus,resources,router){
           Client.deleteLogEntry(this.attrs.item.spk);
         };
         this.attrs.parent.removeChild(this);
+      };
+      handleShareClicked(){
+        if(daedalus.platform.isAndroid&&!!Client){
+          Client.shareLogEntry(this.attrs.item.spk);
+        };
       };
       handleDetailsClicked(){
         router.navigate(router.routes.logEntry({entry:this.attrs.item.spk}));
@@ -1792,7 +1800,6 @@ app=(function(daedalus,resources,router){
         };
       };
       receiveRecords(records){
-        console.log(records);
         this.attrs.view.clear();
         records.forEach(item=>{
             this.attrs.view.addItem(item);
@@ -1805,11 +1812,10 @@ app=(function(daedalus,resources,router){
         this.attrs.routes=[];
       };
       displayMap(bounds){
-        console.log(bounds);
         this.attrs.map=L.map(this.props.id);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                  {attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                      subdomains:'abcd',maxZoom:19}).addTo(this.attrs.map);
+                  {attribution:'&copy; OpenStreetMap contributors &copy; CARTO',subdomains:'abcd',
+                      maxZoom:19}).addTo(this.attrs.map);
         this.attrs.map.fitBounds(bounds);
       };
       displayRoute(segments){
@@ -1818,18 +1824,22 @@ app=(function(daedalus,resources,router){
           this.attrs.map.removeLayer(route);
         };
         this.attrs.routes=[];
-        for(let i=0;i<segments.length;i++){
-          let s=segments[i];
-          s=s.map(t=>{
-              return t.map(p=>{
-                  return[p[0],p[1]];
-                });
-            });
-          if(s.length>0){
-            let route=L.polyline(s,{color:spm_color_map[i],weight:4}).addTo(this.attrs.map);
-            
-            this.attrs.routes.push(route);
+        try{
+          for(let i=0;i<segments.length;i++){
+            let s=segments[i];
+            s=s.map(t=>{
+                return t.map(p=>{
+                    return[p[0],p[1]];
+                  });
+              });
+            if(s.length>0){
+              let route=L.polyline(s,{color:spm_color_map[i],weight:4}).addTo(this.attrs.map);
+              
+              this.attrs.routes.push(route);
+            };
           };
+        }catch(err){
+          console.error(""+err);
         };
       };
     };
@@ -1839,8 +1849,14 @@ app=(function(daedalus,resources,router){
       };
     };
     class TrackBarButton extends DomElement {
-      constructor(extra_style){
-        super("div",{className:[style.trackBar_button,extra_style]},[]);
+      constructor(img){
+        super("div",{className:[style.trackBar_button]},[]);
+        this.attrs.img=img;
+      };
+      elementMounted(){
+        let nd=this.getDomNode();
+        nd.style['background-image']="url("+this.attrs.img+")";
+        nd.style['background-size']="contain";
       };
     };
     class TrackBar extends DomElement {
@@ -1848,8 +1864,8 @@ app=(function(daedalus,resources,router){
         super("div",{className:style.trackBar},[]);
         this.attrs={callback,pressed:false,posA:0,posB:0,maximum:1.0,tposA:0,tposB:0,
                   startx:[0,0],track:this.appendChild(new TrackBarTrack()),btnMin:this.appendChild(
-                      new TrackBarButton(style.trackBar_button1)),btnMax:this.appendChild(new TrackBarButton(
-                          style.trackBar_button2)),active_btn:-1};
+                      new TrackBarButton(resources.svg.marker_L)),btnMax:this.appendChild(new TrackBarButton(
+                          resources.svg.marker_R)),active_btn:-1};
       };
       setPosition(start,end,maximum=1.0){
         let posA=0;
@@ -1877,15 +1893,15 @@ app=(function(daedalus,resources,router){
         };
       };
       _setPosition(btn,ele,tpos,align){
-        let offset=parseFloat(getComputedStyle(ele).fontSize);
         let m2=ele.clientWidth;
-        let m1=offset;
+        let m1=0;
         let x=m1+tpos*m2;
         if(x>m2){
           x=m2;
         }else if(x<m1){
           x=m1;
         };
+        x+=ele.offsetLeft-btn.clientWidth/2;
         this.attrs.startx[align]=Math.floor(x)+"px";
         if(!this.attrs.pressed){
           btn.style.left=this.attrs.startx[align];
@@ -1984,7 +2000,11 @@ app=(function(daedalus,resources,router){
           let x2=parseInt(btnMax.style.left,10);
           let d1=Math.abs(x-x1);
           let d2=Math.abs(x-x2);
-          if(d1<d2){
+          if(x>x2){
+            this.attrs.active_btn=1;
+          }else if(x<x1){
+            this.attrs.active_btn=0;
+          }else if(d1<d2){
             this.attrs.active_btn=0;
           }else{
             this.attrs.active_btn=1;
@@ -1996,29 +2016,34 @@ app=(function(daedalus,resources,router){
         }else{
           btn=btnMax;
         };
-        let offset=parseFloat(getComputedStyle(ele).fontSize);
+        let offset=ele.offsetLeft;
         let m2=ele.clientWidth;
-        let m1=offset;
+        let m1=0;
         if(x>m2){
           x=m2;
         }else if(x<m1){
           x=m1;
         };
         let tpos=(m2>0&&x>=0)?(x-m1)/m2:0.0;
-        let pos=tpos*this.attrs.maximum;
         if(this.attrs.active_btn===0){
-          if(pos>this.attrs.posB){
-            tpos=this.attrs.posB/this.attrs.maximum;
+          if(tpos>this.attrs.tposB){
+            tpos=this.attrs.tposB;
           };
           this.attrs.tposA=tpos;
         }else{
-          if(pos<this.attrs.posA){
-            tpos=this.attrs.posA/this.attrs.maximum;
+          if(tpos<this.attrs.tposA){
+            tpos=this.attrs.tposA;
           };
           this.attrs.tposB=tpos;
         };
-        x=m1+tpos*m2;
-        btn.style.left=Math.floor(x)+"px";
+        let xpos=m1+tpos*m2;
+        if(xpos>m2){
+          xpos=m2;
+        }else if(xpos<m1){
+          xpos=m1;
+        };
+        xpos+=ele.offsetLeft-btn.clientWidth/2;
+        btn.style.left=Math.floor(xpos)+"px";
       };
     };
     function points2segments(points,start,end){
@@ -2076,10 +2101,10 @@ app=(function(daedalus,resources,router){
             router.navigate(router.routes.log());
           });
         this.attrs.map=this.appendChild(new Map());
-        this.attrs.lst=this.appendChild(new daedalus.DomElement("div",{className:style.logView},
-                      []));
-        this.attrs.track=this.attrs.lst.appendChild(new TrackBar(this.handleUpdateData.bind(
+        this.attrs.track=this.appendChild(new TrackBar(this.handleUpdateData.bind(
                           this)));
+        this.attrs.lst=this.appendChild(new daedalus.DomElement("div",{className:style.logEntryView},
+                      []));
         this.attrs.txt_distance=new daedalus.TextElement('----');
         this.attrs.txt_elapsed=new daedalus.TextElement('----');
         this.attrs.txt_avg_pace=new daedalus.TextElement('----');
@@ -2140,7 +2165,10 @@ app=(function(daedalus,resources,router){
           this.attrs.map.displayMap(bounds);
           this.attrs.map.displayRoute(segments);
           this.attrs.track.setPosition(0,data.points.length,data.points.length);
-          let pace=fmtTime(60*(delta_t/distance)*spm_to_mpk);
+          let pace="";
+          if(distance>1e-6){
+            pace=fmtTime(60*(delta_t/distance)*spm_to_mpk);
+          };
           let time=fmtTime(delta_t);
           let dist=(distance/1000.0).toFixed(3)+" k";
           this.attrs.txt_distance.setText(dist);
@@ -2155,7 +2183,10 @@ app=(function(daedalus,resources,router){
         let[distance,delta_t,segments]=points2segments(this.attrs.data.points,start,
                   end);
         this.attrs.map.displayRoute(segments);
-        let pace=fmtTime(60*(delta_t/distance)*spm_to_mpk);
+        let pace="";
+        if(distance>1e-6){
+          pace=fmtTime(60*1000*(delta_t/1000/distance)*spm_to_mpk);
+        };
         let time=fmtTime(delta_t);
         let dist=(distance/1000.0).toFixed(3)+" k";
         this.attrs.txt_distance.setText(dist);

@@ -28,7 +28,7 @@ public class RunsTable extends EntityTable {
 
     public JSONArray getAllRecords() {
 
-        String sql = "SELECT * from runs ORDER BY start_date";
+        String sql = "SELECT * from runs ORDER BY start_date DESC";
         List<String> params = new ArrayList<>();
 
         Cursor cursor = m_db.query(sql, params.toArray(new String[]{}));
@@ -52,6 +52,21 @@ public class RunsTable extends EntityTable {
         }
 
         return results;
+    }
+
+    public String getRecordPath(long spk) {
+        String sql = "SELECT log_path FROM runs WHERE";
+        List<String> params = new ArrayList<>();
+
+        Cursor cursor = find(spk);
+        try {
+            JSONObject obj = getFirstObject(cursor);
+
+            return obj.getString("log_path");
+        } catch (JSONException e) {
+            Log.error("json format error", e);
+        }
+        return null;
     }
 
     public void deleteRecord(long spk) {
@@ -334,5 +349,6 @@ public class RunsTable extends EntityTable {
 
         Log.info("loaded " + point_count + " points, " + segment_count + " segments.");
     }
+
 
 }

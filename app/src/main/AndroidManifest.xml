@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.github.nicksetzer.daedalus.runtracker">
+    package="com.github.nicksetzer.daedalus.runtracker"
+    android:versionCode="1"
+    android:versionName="0.9.0"
+    >
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -27,6 +30,17 @@
             android:exported="false"
             android:permission="android.permission.FOREGROUND_SERVICE">
         </service>
+
+        <provider
+            android:name=".LogProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepath" />
+        </provider>
+
     </application>
 
 </manifest>

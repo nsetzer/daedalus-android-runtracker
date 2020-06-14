@@ -3,6 +3,8 @@ package com.github.nicksetzer.daedalus.runtracker.view;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
@@ -17,6 +19,23 @@ public class DaedalusWebViewClient extends WebViewClient {
         m_activity = activity;
         m_devel = devel;
     }
+
+
+    /*
+    TODO: intercept external URLs and open in the default browser, instead or navigating in the webview
+
+    @Override
+    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        if(url.contains("message2space.es.vu")) {
+            view.loadUrl(url);
+        } else {
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            m_activity.startActivity(i);
+        }
+        return true;
+    }
+    */
+
 
     @Override
     public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {

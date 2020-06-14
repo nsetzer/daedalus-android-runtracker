@@ -2,6 +2,7 @@ package com.github.nicksetzer.daedalus.runtracker;
 
 /*
 adb pull /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus.runtracker/files/app-v2.sqlite
+adb pull /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus.runtracker/files/runlog
 
  */
 import android.content.Context;

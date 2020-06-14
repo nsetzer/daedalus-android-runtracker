@@ -195,4 +195,9 @@ public class WebService extends Service {
     public String getRecord(long spk) {
         return m_database.m_runsTable.getRecord(spk).toString();
     }
+
+    public String getRecordPath(long spk) {
+        return m_database.m_runsTable.getRecordPath(spk);
+
+    }
 }

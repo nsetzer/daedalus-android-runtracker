@@ -12,6 +12,8 @@ const svg_icon_names = [
     "shoe",
     "whiteshoe",
     "back",
+    "marker_R",
+    "marker_L",
 ];
 
 export const svg = {};

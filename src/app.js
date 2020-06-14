@@ -210,8 +210,20 @@ const style = {
 
     }),
 
+    logEntryView: StyleSheet({
+        'padding-left': '1em',
+        'padding-right': '1em',
+        'padding-top': '1em',
+        'padding-bottom': '1em',
+        'width': 'calc(100% - 2em - 2px)',
+        background-color: "white",
+        border: {style: "solid", width: "1px"},
+        'box-shadow': '.25em .25em .3em 0 rgba(0,0,0,0.50)',
+
+    }),
+
     map: StyleSheet({
-        height: "70vh",
+        height: "calc(70vh - 3em)",
         width: "calc(100% - 2px)",
         margin-top: "-1em",
         border: {style: "solid", width: "1px"},
@@ -224,47 +236,37 @@ const style = {
         min-height: "1em",
         width:"calc(100% - 2em)",
         "margin-top": "1em",
-        "padding": "1em"
+        "padding": "1em",
+        user-select: "none",
     }),
 
     trackBar_bar: StyleSheet({
         position: "absolute",
-        height: ".3em",
-        max-height: ".3em",
-        min-height: ".3em",
-        //width:"100%",
-        top: "1.35em",
-        left: "1em",
-        right: "1em",
+        height: ".5em",
+        max-height: ".5em",
+        min-height: ".5em",
+        top: "1.5em",
+        left: "10vw",
+        right: "10vw",
         background-color: "black",
-        border-radius: "1em",
-        border-width: "1px",
-        border-style: "solid",
-        border-color: "black",
+        //border-radius: "1em",
+        //border-width: "1px",
+        //border-style: "solid",
+        //border-color: "black",
         user-select: "none",
     }),
 
     trackBar_button: StyleSheet({
         position: "absolute",
-        height: ".5em",
-        max-height: ".5em",
-        min-height: ".5em",
-        width:"1em",
-        top: "1.25em",
-        border-width: "2px",
-        border-style: "solid",
+        height: "1.5em",
+        max-height: "1.5em",
+        min-height: "1.5em",
+        width:"1.5em",
+        top: ".5em",
+        user-select: 'none',
+        //background-color: "#FF000077"
     }),
 
-    trackBar_button1: StyleSheet({
-        border-radius: "0 10px 10px 0",
-        background-color: "blue",
-        border-color: "blue",
-    }),
-    trackBar_button2: StyleSheet({
-        border-radius: "10px 0 0 10px",
-        background-color: "red",
-        border-color: "red",
-    })
 }
 
 function pad(n, width, z) {
@@ -650,6 +652,8 @@ class LogListItem extends daedalus.DomElement {
         this.attrs.row5.appendChild(new daedalus.DomElement("div"))
         this.attrs.row5.appendChild(new daedalus.ButtonElement("Delete", this.handleDeleteClicked.bind(this)))
         this.attrs.row5.appendChild(new daedalus.DomElement("div"))
+        this.attrs.row5.appendChild(new daedalus.ButtonElement("Export", this.handleShareClicked.bind(this)))
+        this.attrs.row5.appendChild(new daedalus.DomElement("div"))
         this.attrs.row5.appendChild(new daedalus.ButtonElement("Details", this.handleDetailsClicked.bind(this)))
         this.attrs.row5.appendChild(new daedalus.DomElement("div"))
     }
@@ -659,6 +663,12 @@ class LogListItem extends daedalus.DomElement {
             Client.deleteLogEntry(this.attrs.item.spk)
         }
         this.attrs.parent.removeChild(this)
+    }
+
+    handleShareClicked() {
+        if (daedalus.platform.isAndroid && !!Client) {
+            Client.shareLogEntry(this.attrs.item.spk)
+        }
     }
 
     handleDetailsClicked() {
@@ -730,7 +740,6 @@ class LogPage extends daedalus.DomElement {
     }
 
     receiveRecords(records) {
-        console.log(records)
 
         this.attrs.view.clear()
         records.forEach(item => {
@@ -748,14 +757,21 @@ class Map extends daedalus.DomElement {
     }
 
     displayMap(bounds) {
-        console.log(bounds)
         this.attrs.map = L.map(this.props.id)//.setView(pt, 15)
         //this.attrs.map = L.map(this.props.id).setView([40.14083943, -74.19391519], 13)
 
         // .setView(point, zoom);
 
+        /*
+        L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        }).addTo(this.attrs.map);
+        */
+
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            //attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
             subdomains: 'abcd',
             maxZoom: 19
         }).addTo(this.attrs.map);
@@ -771,17 +787,9 @@ class Map extends daedalus.DomElement {
         }
 
         this.attrs.routes = []
-        /*
-        L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            maxZoom: 17,
-            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-        }).addTo(this.attrs.map);
-        */
 
-        /*
-        this.attrs.route = L.polyline(points, {color: 'red'}).addTo(this.attrs.map);
-        */
-        //try {
+
+        try {
             for (let i=0; i < segments.length; i++) {
                 let s = segments[i]
 
@@ -791,16 +799,11 @@ class Map extends daedalus.DomElement {
 
                     let route = L.polyline(s, {color: spm_color_map[i], weight: 4}).addTo(this.attrs.map);
                     this.attrs.routes.push(route)
-                    //console.log(route.getBounds())
                 }
             }
-        //} catch (err) {
-        //    console.error("" + err);
-        //}
-
-        //this.attrs.map.fitBounds(this.attrs.route.getBounds());
-
-
+        } catch (err) {
+            console.error("" + err);
+        }
 
     }
 }
@@ -812,8 +815,15 @@ class TrackBarTrack extends DomElement {
 }
 
 class TrackBarButton extends DomElement {
-    constructor(extra_style) {
-        super("div", {className: [style.trackBar_button, extra_style]}, [])
+    constructor(img) {
+        super("div", {className: [style.trackBar_button]}, [])
+        this.attrs.img = img;
+    }
+
+    elementMounted() {
+        let nd = this.getDomNode()
+        nd.style['background-image'] = "url(" + this.attrs.img + ")";
+        nd.style['background-size'] = "contain";
     }
 }
 
@@ -831,8 +841,8 @@ class TrackBar extends DomElement {
             tposB: 0,
             startx: [0,0],
             track: this.appendChild(new TrackBarTrack()),
-            btnMin: this.appendChild(new TrackBarButton(style.trackBar_button1)),
-            btnMax: this.appendChild(new TrackBarButton(style.trackBar_button2)),
+            btnMin: this.appendChild(new TrackBarButton(resources.svg.marker_L)),
+            btnMax: this.appendChild(new TrackBarButton(resources.svg.marker_R)),
             active_btn: -1,
         }
     }
@@ -871,9 +881,8 @@ class TrackBar extends DomElement {
 
     _setPosition(btn, ele, tpos, align) {
 
-        let offset = parseFloat(getComputedStyle(ele).fontSize)
-        let m2 = ele.clientWidth
-        let m1 = offset;
+        let m2 = ele.clientWidth;
+        let m1 = 0;
 
         let x = m1 + tpos * m2
 
@@ -883,7 +892,10 @@ class TrackBar extends DomElement {
             x = m1
         }
 
+        x += ele.offsetLeft - btn.clientWidth / 2
+
         this.attrs.startx[align] = Math.floor(x) + "px";
+
         if (!this.attrs.pressed) {
             btn.style.left = this.attrs.startx[align]
         }
@@ -980,7 +992,6 @@ class TrackBar extends DomElement {
         this.attrs.active_btn = -1
     }
 
-
     trackingMove(event) {
         let org_event = event;
 
@@ -997,18 +1008,22 @@ class TrackBar extends DomElement {
         const btnMax = this.attrs.btnMax.getDomNode();
         const ele = this.attrs.track.getDomNode();
         const rect = ele.getBoundingClientRect();
-        let x = event.pageX - rect.left
+        let x = event.pageX - rect.left;
 
         if (this.attrs.active_btn == -1) {
             let x1 = parseInt(btnMin.style.left, 10);
             let x2 = parseInt(btnMax.style.left, 10);
-            let d1 = Math.abs(x - x1)
-            let d2 = Math.abs(x - x2)
+            let d1 = Math.abs(x - x1);
+            let d2 = Math.abs(x - x2);
 
-            if (d1 < d2) {
-                this.attrs.active_btn = 0
+            if (x > x2) {
+                this.attrs.active_btn = 1;
+            } else if (x < x1) {
+                this.attrs.active_btn = 0;
+            } else if (d1 < d2 ) {
+                this.attrs.active_btn = 0;
             } else {
-                this.attrs.active_btn = 1
+                this.attrs.active_btn = 1;
             }
         }
 
@@ -1019,10 +1034,11 @@ class TrackBar extends DomElement {
             btn = btnMax;
         }
 
-        let offset = parseFloat(getComputedStyle(ele).fontSize)
+        //let offset = parseFloat(getComputedStyle(ele).fontSize)
+        let offset = ele.offsetLeft
 
         let m2 = ele.clientWidth
-        let m1 = offset;
+        let m1 = 0;
 
         if (x > m2) {
             x = m2;
@@ -1031,25 +1047,36 @@ class TrackBar extends DomElement {
         }
 
         let tpos = (m2 > 0 && x >= 0) ? (x - m1) / m2 : 0.0;
-        let pos = tpos * this.attrs.maximum
 
         if (this.attrs.active_btn === 0) {
 
-            if (pos > this.attrs.posB) {
-                tpos = this.attrs.posB/this.attrs.maximum;
+            if (tpos > this.attrs.tposB) {
+                tpos = this.attrs.tposB;
             }
             this.attrs.tposA = tpos
         } else {
-            if (pos < this.attrs.posA) {
-                tpos = this.attrs.posA/this.attrs.maximum;
+            if (tpos < this.attrs.tposA) {
+                tpos = this.attrs.tposA;
 
             }
             this.attrs.tposB = tpos
         }
 
-        x = m1 + tpos * m2
 
-        btn.style.left = Math.floor(x) + "px";
+        let xpos = m1 + tpos * m2
+
+        if (xpos > m2) {
+            xpos = m2;
+        } else if (xpos < m1) {
+            xpos = m1
+        }
+
+        // the position of the marker needs to be offset
+        // relative to the offset of the track, and also
+        // centered on the svg
+        xpos += ele.offsetLeft - btn.clientWidth / 2
+
+        btn.style.left = Math.floor(xpos) + "px";
     }
 }
 
@@ -1125,9 +1152,10 @@ class LogEntryPage extends daedalus.DomElement {
 
         this.attrs.map = this.appendChild( new Map() );
 
-        this.attrs.lst = this.appendChild(new daedalus.DomElement("div", {className: style.logView}, []))
+        this.attrs.track = this.appendChild( new TrackBar(this.handleUpdateData.bind(this)) );
 
-        this.attrs.track = this.attrs.lst.appendChild( new TrackBar(this.handleUpdateData.bind(this)) );
+        this.attrs.lst = this.appendChild(new daedalus.DomElement("div", {className: style.logEntryView}, []))
+
 
         this.attrs.txt_distance = new daedalus.TextElement('----')
         this.attrs.txt_elapsed = new daedalus.TextElement('----')
@@ -1211,7 +1239,10 @@ class LogEntryPage extends daedalus.DomElement {
             this.attrs.map.displayRoute(segments)
             this.attrs.track.setPosition(0, data.points.length, data.points.length)
 
-            let pace = fmtTime(60 * (delta_t / distance) * spm_to_mpk)
+            let pace = "";
+            if (distance > 1e-6) {
+                pace = fmtTime(60 * (delta_t / distance) * spm_to_mpk)
+            }
             let time = fmtTime(delta_t)
             let dist = (distance/1000.0).toFixed(3) + " k"
 
@@ -1229,7 +1260,10 @@ class LogEntryPage extends daedalus.DomElement {
         let [distance, delta_t, segments] = points2segments(this.attrs.data.points, start, end)
         this.attrs.map.displayRoute(segments)
 
-        let pace = fmtTime(60 * (delta_t / distance) * spm_to_mpk)
+        let pace = "";
+        if (distance > 1e-6) {
+            pace = fmtTime(60 * 1000 * (delta_t / 1000 / distance) * spm_to_mpk)
+        }
         let time = fmtTime(delta_t)
         let dist = (distance/1000.0).toFixed(3) + " k"
 

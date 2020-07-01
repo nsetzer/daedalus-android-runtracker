@@ -135,8 +135,7 @@ public class LocationManager {
                 locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER);
     }
 
-    public boolean enableLocationTracking(boolean enable)
-    {
+    public boolean enableLocationTracking(boolean enable) {
         if (enable) {
 
             //m_trackerGps.reset();
@@ -302,6 +301,32 @@ public class LocationManager {
         }
 
         return false;
+    }
+
+    public String getLastKnownLocation() {
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setAltitudeRequired(false);
+        criteria.setBearingRequired(false);
+        criteria.setCostAllowed(true);
+        criteria.setPowerRequirement(Criteria.POWER_LOW);
+        String provider = locationManager.getBestProvider(criteria, true);
+
+        JSONObject obj = new JSONObject();
+
+        try {
+            Location loc = locationManager.getLastKnownLocation(provider);
+
+            obj.put("lat", loc.getLatitude());
+            obj.put("lon", loc.getLongitude());
+
+        } catch (SecurityException e) {
+            Log.error("security error", e);
+        } catch (JSONException e) {
+            Log.error("json error", e);
+        }
+
+        return obj.toString();
     }
 
 

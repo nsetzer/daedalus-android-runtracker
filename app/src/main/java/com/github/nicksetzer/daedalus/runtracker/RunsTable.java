@@ -164,6 +164,8 @@ public class RunsTable extends EntityTable {
         try {
             String line = reader.readLine();
 
+            double prev_spm = -1.0;
+
             while (line != null && !line.equals("")) {
 
 
@@ -184,11 +186,19 @@ public class RunsTable extends EntityTable {
                     index = 0;
                 } else if (distance > 1e-6) {
                     double spm = delta_t / 1000 / distance;
+
+                    if (Math.abs(spm - prev_spm) < .25) {
+                        spm = prev_spm;
+                    } else {
+                        prev_spm = spm;
+                    }
                     index = (int) (spm * SPM_SCALE_FACTOR);
                     if (index >= N_SEGMENTS) {
                         index = N_SEGMENTS - 1;
                     }
                     index += 1;
+
+
                 }
 
                 JSONArray pt = new JSONArray();

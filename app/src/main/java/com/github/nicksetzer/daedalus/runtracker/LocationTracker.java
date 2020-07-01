@@ -15,8 +15,8 @@ public class LocationTracker {
     private static final double DEG2RAD = PI/180.0;
     private static final double MIN_DELTA_M = 2.0;
 
-    final double epsilon = 1e-6;
-    final double pace_maximum_spm = 4.0;
+    private final double epsilon = 1e-6;
+    private final double pace_maximum_spm = 4.0;
 
     private double m_current_lat = 0;
     private double m_current_lon = 0;
@@ -234,7 +234,10 @@ public class LocationTracker {
         return d;
     }
 
-    private class CurrentPaceTracker {
+    public static class CurrentPaceTracker {
+
+        private final double epsilon = 1e-6;
+        private final double pace_maximum_spm = 4.0;
 
         // take the average pace over the last few samples
         // weight the most recent data point higher
@@ -255,8 +258,6 @@ public class LocationTracker {
             m_current_pace_spm = 0.0;
         }
 
-
-
         public void clear() {
             m_points.clear();
         }
@@ -273,7 +274,7 @@ public class LocationTracker {
                 spm = pace_maximum_spm;
             }
 
-            m_points.add(pace_maximum_spm);
+            m_points.add(spm);
 
             while (m_points.size() > 5) {
                 m_points.remove(0);

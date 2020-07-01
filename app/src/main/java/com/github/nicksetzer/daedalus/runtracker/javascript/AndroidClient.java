@@ -41,11 +41,25 @@ public class AndroidClient {
     }
 
     @JavascriptInterface
+    public String getLastKnownLocation() {
+        try {
+            WebService service = m_activity.getBoundService();
+            if (service != null) {
+                String result = service.getLastKnownLocation();
+                return result;
+            }
+        } catch (Exception e) {
+            Log.error("unhandled exception", e);
+        }
+        return "{}";
+    }
+
+    @JavascriptInterface
     public String getRecords() {
         try {
             WebService service = m_activity.getBoundService();
             if (service != null) {
-                String result = m_activity.getBoundService().getRecords();
+                String result = service.getRecords();
                 return result;
             }
         } catch (Exception e) {

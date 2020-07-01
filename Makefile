@@ -31,3 +31,12 @@ serve:
 			--static ./resources \
 			./src/app.js \
 
+
+.PHONY: serve
+serve_minify:
+	source venv/bin/activate && python -V && \
+		PYTHONPATH='./daedalus' \
+		python -m daedalus serve \
+			--minify \
+			--static ./resources \
+			./src/app.js \

@@ -183,6 +183,10 @@ public class WebService extends Service {
         }
     }
 
+    public String getLastKnownLocation() {
+        return m_location.getLastKnownLocation();
+    }
+
     public String getRecords() {
         return m_database.m_runsTable.getAllRecords().toString();
     }

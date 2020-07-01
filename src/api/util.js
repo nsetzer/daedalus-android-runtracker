@@ -30,7 +30,7 @@ function findLatLonCenter(points) {
     return [lat, lon];
 }
 
-function geo_distance(lat1, lon1, lat2, lon2)
+export function geo_distance(lat1, lon1, lat2, lon2)
 {
     const pi = Math.PI;
     const R = 6371e3; // earth's radius (mean), metres

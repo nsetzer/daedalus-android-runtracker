@@ -23,6 +23,7 @@ export const route_urls = {
     logEntry: "/log/:entry",
     log: "/log",
     settings: "/settings",
+    plan: "/plan",
     wildCard: "/:path*",
     landing: "/",
 }

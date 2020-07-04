@@ -1,3 +1,57 @@
+api={"requests":{}};
+api.requests=(function(){
+    "use strict";
+    function get_text(url,parameters){
+      if(parameters===undefined){
+        parameters={};
+      }
+      parameters.method="GET";
+      return fetch(url,parameters).then((response)=>{
+          return response.text();
+        });
+    }
+    function get_json(url,parameters){
+      if(parameters===undefined){
+        parameters={};
+      }
+      parameters.method="GET";
+      return fetch(url,parameters).then((response)=>{
+          if(!response.ok){
+            throw response;
+          }
+          return response.json();
+        });
+    }
+    function post_json(url,payload,parameters){
+      if(parameters===undefined){
+        parameters={};
+      }
+      if(parameters.headers===undefined){
+        parameters.headers={};
+      }
+      parameters.method="POST";
+      parameters.headers['Content-Type']="application/json";
+      parameters.body=JSON.stringify(payload);
+      return fetch(url,parameters).then((response)=>{
+          return response.json();
+        });
+    }
+    function put_json(url,payload,parameters){
+      if(parameters===undefined){
+        parameters={};
+      }
+      if(parameters.headers===undefined){
+        parameters.headers={};
+      }
+      parameters.method="PUT";
+      parameters.headers['Content-Type']="application/json";
+      parameters.body=JSON.stringify(payload);
+      return fetch(url,parameters).then((response)=>{
+          return response.json();
+        });
+    }
+    return{get_json,get_text,post_json,put_json};
+  })();
 daedalus=(function(){
     "use strict";
     const env={};
@@ -437,13 +491,16 @@ daedalus=(function(){
         }
         class TextInputElement extends DomElement {
           constructor(text,_,submit_callback){
-            super("input",{value:text},[]);
+            super("input",{value:text,type:"text"},[]);
             this.textChanged=Signal(this,'textChanged');
             this.attrs={submit_callback};
           }
           setText(text){
             this.updateProps({value:text});
             this.textChanged.emit(this.props);
+          }
+          getText(){
+            return this.props.value;
           }
           onChange(event){
             this.updateProps({value:event.target.value},false);
@@ -1370,72 +1427,134 @@ daedalus=(function(){
           locationMatch,parseParameters,patternCompile,patternToRegexp,platform,render,
           render_update,uploadFile,util};
   })();
-api=(function(){
-    "use strict";
-    const[geo_distance]=(function(){
-        const RAD2DEG=180/Math.PI;
-        const DEG2RAD=Math.PI/180;
-        function findLatLonCenter(points){
-          let avgX=0;
-          let avgY=0;
-          let avgZ=0;
-          for(var i=0;i<points.length;i++)
-            {
-              var lat=points[i][0]*DEG2RAD;
-              var lon=points[i][1]*DEG2RAD;
-              avgX+=Math.cos(lat)*Math.cos(lon);
-              avgY+=Math.cos(lat)*Math.sin(lon);
-              avgZ+=Math.sin(lat);
-            }
-          avgX=avgX/points.length;
-          avgY=avgY/points.length;
-          avgZ=avgZ/points.length;
-          var hyp=Math.sqrt(avgX*avgX+avgY*avgY);
-          var lon=Math.atan2(avgY,avgX)*RAD2DEG;
-          var lat=Math.atan2(avgZ,hyp)*RAD2DEG;
-          return[lat,lon];
-        }
-        function geo_distance(lat1,lon1,lat2,lon2){
-          const pi=Math.PI;
-          const R=6371e3;
-          const phi1=lat1*DEG2RAD;
-          const phi2=lat2*DEG2RAD;
-          const deltaphi=(lat2-lat1)*DEG2RAD;
-          const deltalambda=(lon2-lon1)*DEG2RAD;
-          const a=Math.sin(deltaphi/2)*Math.sin(deltaphi/2)+Math.cos(phi1)*Math.cos(
-                      phi2)*Math.sin(deltalambda/2)*Math.sin(deltalambda/2);
-          const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-          const d=R*c;
-          return d;
-        }
-        function meters_to_feet(distance){
-          return distance*3.28083333;
-        }
-        function feet_to_miles(distance){
-          return distance/528;
-        }
-        return[geo_distance];
-      })();
-    const[getLastKnownLocation]=(function(){
-        function getLastKnownLocation(){
-          if(daedalus.platform.isAndroid&&!!Client){
-            let s=Client.getLastKnownLocation();
-            return JSON.parse(s);
-          }else{
-            return{lat:40,lon:-75};
+Object.assign(api,(function(api){
+      "use strict";
+      const[geo_distance]=(function(){
+          const RAD2DEG=180/Math.PI;
+          const DEG2RAD=Math.PI/180;
+          function findLatLonCenter(points){
+            let avgX=0;
+            let avgY=0;
+            let avgZ=0;
+            for(var i=0;i<points.length;i++)
+              {
+                var lat=points[i][0]*DEG2RAD;
+                var lon=points[i][1]*DEG2RAD;
+                avgX+=Math.cos(lat)*Math.cos(lon);
+                avgY+=Math.cos(lat)*Math.sin(lon);
+                avgZ+=Math.sin(lat);
+              }
+            avgX=avgX/points.length;
+            avgY=avgY/points.length;
+            avgZ=avgZ/points.length;
+            var hyp=Math.sqrt(avgX*avgX+avgY*avgY);
+            var lon=Math.atan2(avgY,avgX)*RAD2DEG;
+            var lat=Math.atan2(avgZ,hyp)*RAD2DEG;
+            return[lat,lon];
           }
-        }
-        return[getLastKnownLocation];
-      })();
-    return{geo_distance,getLastKnownLocation};
-  })();
+          function geo_distance(lat1,lon1,lat2,lon2){
+            const pi=Math.PI;
+            const R=6371e3;
+            const phi1=lat1*DEG2RAD;
+            const phi2=lat2*DEG2RAD;
+            const deltaphi=(lat2-lat1)*DEG2RAD;
+            const deltalambda=(lon2-lon1)*DEG2RAD;
+            const a=Math.sin(deltaphi/2)*Math.sin(deltaphi/2)+Math.cos(phi1)*Math.cos(
+                          phi2)*Math.sin(deltalambda/2)*Math.sin(deltalambda/2);
+            const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+            const d=R*c;
+            return d;
+          }
+          function meters_to_feet(distance){
+            return distance*3.28083333;
+          }
+          function feet_to_miles(distance){
+            return distance/528;
+          }
+          return[geo_distance];
+        })();
+      const[geoGetPostalCode,geoGetPostalCodeInfo,getLastKnownLocation,nwsGetEndpoints,
+              nwsGetHourlyForecast,zipGetPostalCode,zipGetPostalCodeInfo]=(function(){
+          function getLastKnownLocation(){
+            if(daedalus.platform.isAndroid&&!!Client){
+              let s=Client.getLastKnownLocation();
+              return JSON.parse(s);
+            }else{
+              return{lat:42.357902,lon:-71.06408};
+            }
+          }
+          const weather_base="https://api.weather.gov";
+          function nwsGetEndpoints(lat,lon){
+            const url=weather_base+`/points/${lat},${lon}`;
+            console.log(url);
+            return api.requests.get_json(url);
+          }
+          function nwsGetHourlyForecast(id,x,y){
+            const url=weather_base+`/gridpoints/${id}/${x},${y}/forecast/hourly`;
+            
+            console.log(url);
+            return api.requests.get_json(url);
+          }
+          const geo_base="http://api.geonames.org";
+          const geo_username="daedalus_android_run";
+          function geoGetPostalCode(lat,lng){
+            const url=geo_base+`/findNearbyPostalCodesJSON?lat=${lat}&lng=${lng}&maxRows=1&username=${geo_username}`;
+            
+            console.log(url);
+            return api.requests.get_json(url);
+          }
+          function geoGetPostalCodeInfo(postal_code){
+            const url=geo_base+`/postalCodeSearchJSON?postalcode=${postal_code}&maxRows=1&username=${geo_username}`;
+            
+            console.log(url);
+            return api.requests.get_json(url);
+          }
+          function distance(x1,y1,x2,y2){
+            return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+          }
+          function zipGetPostalCode(lat,lng){
+            let d=Number.MAX_SAFE_INTEGER;
+            let p=null;
+            for(let i=0;i<zipcode_dat.length;i++)
+              {
+                let t=distance(zipcode_dat[i][zipcode_lat],zipcode_dat[i][zipcode_lon],
+                                  lat,lng);
+                if(t<d){
+                  d=t;
+                  p=zipcode_dat[i][zipcode_zip];
+                }
+              }
+            return p;
+          }
+          function zipGetPostalCodeInfo(postal_code){
+            console.log(postal_code);
+            if(!postal_code||postal_code.length!=5){
+              return null;
+            }
+            for(let i=0;i<zipcode_dat.length;i++)
+              {
+                if(zipcode_dat[i][zipcode_zip]==postal_code){
+                  return{lat:zipcode_dat[i][zipcode_lat],lon:zipcode_dat[i][zipcode_lon]};
+                  
+                }
+              }
+            return null;
+          }
+          return[geoGetPostalCode,geoGetPostalCodeInfo,getLastKnownLocation,nwsGetEndpoints,
+                      nwsGetHourlyForecast,zipGetPostalCode,zipGetPostalCodeInfo];
+        })();
+      return{geoGetPostalCode,geoGetPostalCodeInfo,geo_distance,getLastKnownLocation,
+              nwsGetEndpoints,nwsGetHourlyForecast,zipGetPostalCode,zipGetPostalCodeInfo};
+      
+    })(api));
 resources=(function(daedalus){
     "use strict";
     const platform_prefix=daedalus.platform.isAndroid?"file:///android_asset/site/static/icon/":"/static/icon/";
     
-    const svg_icon_names=["button_play","button_pause","button_stop","button_split",
-          "gear","shoe","whiteshoe","back","marker_R","marker_L","trash","share","map",
-          "map_add","map_remove","map_split","map_close"];
+    const svg_icon_names=["back","button_pause","button_play","button_split","button_stop",
+          "cloud","gear","map","map_add","map_close","map_dec","map_inc","map_pause",
+          "map_play","map_remove","map_split","marker_L","marker_R","radar","share","shoe",
+          "trash","whiteshoe"];
     const png_icon_names=["map_end","map_point","map_start"];
     const svg={};
     const png={};
@@ -1463,13 +1582,18 @@ router=(function(api,daedalus){
     function navigate(location){
       history.pushState({},"",location);
     }
+    function back(location){
+      history.back();
+    }
     const route_urls={logEntry:"/log/:entry",log:"/log",settings:"/settings",plan:"/plan",
-          wildCard:"/:path*",landing:"/"};
+          weather_location:"/weather/forecast/:lat/:lon/hourly",weather_radar:"/weather/radar",
+          weather_wildcard:"/weather/:path",weather:"/weather",wildCard:"/:path*",landing:"/"};
+    
     const routes={};
     Object.keys(route_urls).map(key=>{
         routes[key]=patternCompile(route_urls[key]);
       });
-    return{AppRouter,navigate,route_urls,routes};
+    return{AppRouter,back,navigate,route_urls,routes};
   })(api,daedalus);
 components=(function(daedalus){
     "use strict";
@@ -1623,8 +1747,12 @@ app=(function(api,components,daedalus,resources,router){
           logItemActions:'dcs-2e988578-27',logEntryView:'dcs-2e988578-28',map:'dcs-2e988578-29',
           map2:'dcs-2e988578-30',chart:'dcs-2e988578-31',trackBar:'dcs-2e988578-32',trackBar_bar:'dcs-2e988578-33',
           trackBar_button:'dcs-2e988578-34',switchMain:'dcs-2e988578-35',switchMainActive:'dcs-2e988578-36',
-          switchButton:'dcs-2e988578-37',switchButtonActive:'dcs-2e988578-38',settingsRow:'dcs-2e988578-39'};
-    
+          switchButton:'dcs-2e988578-37',switchButtonActive:'dcs-2e988578-38',settingsRow:'dcs-2e988578-39',
+          weatherCtrl:'dcs-2e988578-40',weatherCtrlInput:'dcs-2e988578-41',weatherCtrlButton:'dcs-2e988578-42',
+          nwsDay:'dcs-2e988578-43',nwsDayRowInfo:'dcs-2e988578-44',nwsDayRowInfoLeft:'dcs-2e988578-45',
+          nwsDayRowInfoRight:'dcs-2e988578-46',nwsDayColGrow:'dcs-2e988578-47',nwsItem:'dcs-2e988578-48',
+          nwsItemColImage:'dcs-2e988578-49',nwsItemColFixed:'dcs-2e988578-50',nwsItemColTime:'dcs-2e988578-51',
+          nwsItemColGrow:'dcs-2e988578-52'};
     function pad(n,width,z){
       z=z||'0';
       n=n+'';
@@ -1748,6 +1876,10 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.header.addElement(new components.HSpacer("1em"));
         this.attrs.header.addAction(resources.svg.map,()=>{
             router.navigate(router.routes.plan());
+          });
+        this.attrs.header.addElement(new components.HSpacer("1em"));
+        this.attrs.header.addAction(resources.svg.cloud,()=>{
+            router.navigate(router.routes.weather({path:''}));
           });
         this.attrs.header.addElement(new components.HSpacer("1em"));
         this.attrs.distRow=this.appendChild(new Div(style.paceCol));
@@ -1928,6 +2060,8 @@ app=(function(api,components,daedalus,resources,router){
     }
     const month_short_names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep',
           'Oct','Nov','Dec'];
+    const week_long_names=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday',
+          'Saturday'];
     class LogListItem extends daedalus.DomElement {
       constructor(parent,item){
         super("div",{className:style.logItem},[]);
@@ -2840,6 +2974,378 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.map.displayMap();
       }
     }
+    class PostalCodeListItem extends daedalus.DomElement {
+      constructor(code){
+        super("div",{className:style.nwsItem},[]);
+        let col2=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColGrow}));
+        
+        let row;
+        row=col2.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+                      []));
+        row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
+                              `${code}`)]));
+      }
+    }
+    class NwsForecastHourItem extends daedalus.DomElement {
+      constructor(parent,item){
+        super("div",{className:style.nwsItem},[]);
+        this.attrs.parent=parent;
+        this.attrs.item=item;
+        let col1=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColImage}));
+        
+        let colTime=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColTime}));
+        
+        let col2=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColGrow}));
+        
+        let colTmp=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColFixed}));
+        
+        let tmp;
+        let row;
+        let dt=new Date(item.startTime);
+        col1.appendChild(new daedalus.DomElement("img",{src:item.icon,width:64,height:64},
+                      []));
+        row=colTime.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+                      []));
+        row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
+                              `${pad(dt.getHours(),2,'\xa0')}:${pad(dt.getMinutes(),2)}`)]));
+        row=colTmp.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+                      []));
+        row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
+                              `${item.temperature} ${item.temperatureUnit}`)]));
+        row=col2.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+                      []));
+        row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
+                              `${item.shortForecast}`)]));
+      }
+    }
+    class NwsForecastDayItem extends daedalus.DomElement {
+      constructor(parent,day){
+        super("div",{className:style.nwsDay},[]);
+        this.attrs.parent=parent;
+        this.attrs.day=day;
+        let col2=this.appendChild(new daedalus.DomElement("div",{className:style.nwsDayColGrow}));
+        
+        let tmp;
+        let row;
+        let date=pad(day.year,2)+"/"+pad(day.month,2)+"/"+pad(day.day,2);
+        row=col2.appendChild(new daedalus.DomElement("div",{className:style.nwsDayRowInfo},
+                      []));
+        row.appendChild(new daedalus.DomElement("div",{className:style.nwsDayRowInfoLeft},
+                      [new daedalus.TextElement(day.weekday)]));
+        row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
+                              `${date}`)]));
+        row.appendChild(new daedalus.DomElement("div",{className:style.nwsDayRowInfoRight},
+                      [new daedalus.TextElement(`\u2191 ${day.temperature.hi} ${day.temperature.unit}\xa0\u2193 ${day.temperature.lo} ${day.temperature.unit}`)]));
+        
+      }
+      onClick(){
+        this.toggleContent();
+      }
+      toggleContent(){
+        this.attrs.parent.attrs.show_content=!this.attrs.parent.attrs.show_content;
+        
+        this.attrs.parent.attrs.hours.forEach(hour=>{
+            hour.getDomNode().style.display=this.attrs.parent.attrs.show_content?null:"none";
+            
+          });
+      }
+    }
+    class SampleListView extends daedalus.DomElement {
+      constructor(){
+        super("div",{className:style.logView},[]);
+      }
+      clear(){
+        this.removeChildren();
+      }
+      addItem(item){
+        this.appendChild();
+      }
+      addDay(day){
+        let div=new Div();
+        div.attrs.hours=[];
+        div.attrs.show_content=true;
+        let hdr=div.appendChild(new NwsForecastDayItem(div,day));
+        day.data.forEach(item=>{
+            let child=new NwsForecastHourItem(div,item);
+            div.appendChild(child);
+            div.attrs.hours.push(child);
+          });
+        this.appendChild(div);
+      }
+      hideContent(){
+        this.children.forEach(child=>{
+            child.attrs.show_content=false;
+            child.attrs.hours.forEach(hour=>{
+                hour.getDomNode().style.display="none";
+              });
+          });
+      }
+    }
+    class WeatherDashboard extends daedalus.DomElement {
+      constructor(parent){
+        super("div",{className:style.weatherCtrl},[]);
+        this.attrs.parent=parent;
+        this.attrs.input_code=this.appendChild(new daedalus.TextInputElement("00000"));
+        
+        this.attrs.input_code.props.className=style.weatherCtrlInput;
+        this.attrs.input_code.props.type="number";
+        this.attrs.btn_refresh=this.appendChild(new daedalus.ButtonElement("Refresh",
+                      this.handleRefresh.bind(this)));
+        this.attrs.btn_refresh.props.className=style.weatherCtrlButton;
+        this.attrs.btn_refresh=this.appendChild(new daedalus.ButtonElement("Minimize",
+                      this.handleMinimize.bind(this)));
+        this.attrs.btn_refresh.props.className=style.weatherCtrlButton;
+      }
+      setPostalCode(code){
+        this.attrs.input_code.setText(code);
+      }
+      handleRefresh(){
+        this.attrs.parent.changeLocationByPostalCode(this.attrs.input_code.getText(
+                    ));
+      }
+      minimizeForecast
+      handleMinimize(){
+        this.attrs.parent.minimizeForecast();
+      }
+    }
+    class WeatherPage extends daedalus.DomElement {
+      constructor(){
+        super("div",{className:style.app},[]);
+        this.attrs.header=this.appendChild(new NavHeader());
+        this.attrs.header.addAction(resources.svg.back,()=>{
+            router.navigate(router.routes.landing());
+          });
+        this.attrs.header.addElement(new components.HSpacer("1em"));
+        this.attrs.header.addAction(resources.svg.radar,()=>{
+            router.navigate(router.routes.weather_radar());
+          });
+        this.attrs.header.addElement(new components.HSpacer("1em"));
+        this.attrs.dashboard=this.appendChild(new WeatherDashboard(this));
+        this.attrs.list=this.appendChild(new SampleListView());
+        this.appendChild(new components.VSpacer("25vh"));
+        let periods=[{"number":1,"name":"","startTime":"2020-07-03T09:00:00-04:00",
+                      "endTime":"2020-07-03T10:00:00-04:00","isDaytime":true,"temperature":71,
+                      "temperatureUnit":"F","temperatureTrend":null,"windSpeed":"12 mph","windDirection":"NE",
+                      "icon":"https://api.weather.gov/icons/land/day/ovc?size=small","shortForecast":"Cloudy",
+                      "detailedForecast":""},{"number":2,"name":"","startTime":"2020-07-03T10:00:00-04:00",
+                      "endTime":"2020-07-03T11:00:00-04:00","isDaytime":true,"temperature":70,
+                      "temperatureUnit":"F","temperatureTrend":null,"windSpeed":"13 mph","windDirection":"NE",
+                      "icon":"https://api.weather.gov/icons/land/day/rain_showers,80?size=small",
+                      "shortForecast":"Slight Chance Rain Showers","detailedForecast":""}];
+        
+        this.setPeriods(periods);
+      }
+      elementMounted(){
+        console.log(this.state);
+        let pt;
+        if(!this.state.match.lat||!this.state.match.lon){
+          pt=api.getLastKnownLocation();
+          router.navigate(router.routes.weather_location(pt));
+          this.state.match=pt;
+        }else{
+          pt=this.state.match;
+        }
+        this.changeLocationByLocation(pt);
+      }
+      changeLocationByLocation(pt){
+        if(pt!==null){
+          let postal_code=api.zipGetPostalCode(pt.lat,pt.lon);
+          this.attrs.dashboard.setPostalCode(postal_code);
+          this.attrs.list.clear();
+          api.nwsGetEndpoints(pt.lat,pt.lon).then(result=>{
+              this.handleGetEndpoints(result.properties);
+            }).catch(error=>{
+              console.log(error);
+            });
+        }
+      }
+      changeLocationByPostalCode(postal_code){
+        let pt=api.zipGetPostalCodeInfo(postal_code);
+        if(pt!==null){
+          this.attrs.dashboard.setPostalCode(postal_code);
+          this.attrs.list.clear();
+          api.nwsGetEndpoints(pt.lat,pt.lon).then(result=>{
+              this.handleGetEndpoints(result.properties);
+            }).catch(error=>{
+              console.log(error);
+            });
+        }
+      }
+      minimizeForecast(){
+        this.attrs.list.hideContent();
+      }
+      handleGetEndpoints(props){
+        console.log(props);
+        let info={id:props.gridId,x:props.gridX,y:props.gridY};
+        api.nwsGetHourlyForecast(info.id,info.x,info.y).then(result=>{
+            this.handleGetHourlyForecast(result.properties);
+          }).catch(error=>{
+            console.log(error);
+          });
+      }
+      handleGetHourlyForecast(props){
+        this.setPeriods(props.periods);
+      }
+      handleGetPostalCode(result){
+        console.log(result);
+      }
+      setPeriods(periods){
+        this.attrs.list.clear();
+        let days=[];
+        let previous_day=-1;
+        for(let i=0;i<periods.length;i++)
+          {
+            let item=periods[i];
+            let dt=new Date(item.startTime);
+            if(dt.getDay()!==previous_day){
+              let day={year:dt.getFullYear(),month:1+dt.getMonth(),day:dt.getDate(
+                                ),weekday:week_long_names[dt.getDay()],temperature:{hi:0,lo:200,unit:item.temperatureUnit},
+                              data:[]};
+              days.push(day);
+              previous_day=dt.getDay();
+            }
+            if(item.temperature>days[days.length-1].temperature.hi){
+              days[days.length-1].temperature.hi=item.temperature;
+            }
+            if(item.temperature<days[days.length-1].temperature.lo){
+              days[days.length-1].temperature.lo=item.temperature;
+            }
+            days[days.length-1].data.push(item);
+          }
+        days.forEach(day=>{
+            this.attrs.list.addDay(day);
+          });
+      }
+    }
+    let TimeCtrl=L.Control.extend({onAdd:function(map){
+          var el=L.DomUtil.create('div','leaflet-bar my-control');
+          el.innerHTML='Distance: 0.000k';
+          el.style['font-size']="1.5em";
+          el.style.padding=".5em";
+          el.style['background-color']="white";
+          return el;
+        },onRemove:function(map){
+
+        },setTime:function(time){
+          this.getContainer().innerHTML=""+time;
+        }});
+    class RadarMap extends daedalus.DomElement {
+      constructor(){
+        super("div",{className:style.map2},[]);
+        this.attrs={animation_index:0,animation_timer:null};
+      }
+      displayMap(){
+        const pt=api.getLastKnownLocation();
+        this.attrs.map=L.map(this.props.id).setView([pt.lat,pt.lon],10);
+        new L.marker(pt,{}).addTo(this.attrs.map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                  {attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> | &copy; <a href="https://mesonet.agron.iastate.edu/ogc/">OGC</a>',
+                      subdomains:'abcd',maxZoom:19}).addTo(this.attrs.map);
+        this.attrs.time_ctrl=new TimeCtrl({position:'topright'});
+        this.attrs.time_ctrl.addTo(this.attrs.map);
+        this.attrs.ptnd_pp=this.addControl(resources.svg.map_pause,"Pause Animation",
+                  this.handlePtPlayPauseClicked.bind(this));
+        this.attrs.ptnd_inc=this.addControl(resources.svg.map_inc,"Step Forward",
+                  this.handlePtStepForwardClicked.bind(this));
+        this.attrs.ptnd_dec=this.addControl(resources.svg.map_dec,"Step Backward",
+                  this.handlePtStepBackwardClicked.bind(this));
+        let radarLayers=[];
+        let radarTimes=[];
+        let scale=(5*60*1000);
+        let now=Math.floor(Date.now()/scale)*scale;
+        console.log(now);
+        for(let time=50;time>5;time-=5)
+          {
+            let name='nexrad-n0q-900913-m'+pad(time,2)+'m';
+            let layer=L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi",
+                          {layers:name,format:'image/png',transparent:true,opacity:0.0});
+            radarLayers.push(layer);
+            layer.addTo(this.attrs.map);
+            let dt=new Date(now-time*60*1000);
+            radarTimes.push(`${dt.getHours()}:${pad(dt.getMinutes(),2)}`);
+          }
+        let name='nexrad-n0q-900913';
+        let layer=L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi",
+                  {layers:name,format:'image/png',transparent:true,opacity:0.0});
+        radarLayers.push(layer);
+        let dt=new Date(now);
+        radarTimes.push(`${dt.getHours()}:${pad(dt.getMinutes(),2)}`);
+        this.attrs.time_ctrl.setTime(radarTimes[0]);
+        layer.addTo(this.attrs.map);
+        this.attrs.radarLayers=radarLayers;
+        this.attrs.radarTimes=radarTimes;
+        this.startAnimation();
+      }
+      addControl(icon,title,fn){
+        let html='<img src="'+icon+'" style="margin-top: 3px;" width="24" height="24">';
+        
+        let className="leaflet-control-zoom-out";
+        let node=this.attrs.map.zoomControl._createButton(html,title,className,this.attrs.map.zoomControl._container,
+                  fn);
+        return node;
+      }
+      startAnimation(){
+        this.attrs.animation_index=-1;
+        this.attrs.animation_timer=setInterval(this.handleAnimationTimeout.bind(this),
+                  1000);
+      }
+      stopAnimation(){
+        if(this.attrs.animation_timer!==null){
+          clearInterval(this.attrs.animation_timer);
+          this.attrs.animation_timer=null;
+        }
+      }
+      handleAnimationTimeout(){
+        this.attrs.animation_index+=1;
+        if(this.attrs.animation_index>=this.attrs.radarLayers.length){
+          this.attrs.animation_index=0;
+        }
+        this.updateRadarLayer();
+      }
+      elementUnmounted(){
+        this.stopAnimation();
+      }
+      handlePtPlayPauseClicked(){
+        if(this.attrs.animation_timer!==null){
+          this.stopAnimation();
+          this.attrs.ptnd_pp.firstChild.src=resources.svg.map_play;
+        }else{
+          this.startAnimation();
+          this.attrs.ptnd_pp.firstChild.src=resources.svg.map_pause;
+        }
+      }
+      handlePtStepForwardClicked(){
+        if(this.attrs.animation_index<this.attrs.radarLayers.length-1){
+          this.attrs.animation_index+=1;
+        }
+        this.updateRadarLayer();
+      }
+      handlePtStepBackwardClicked(){
+        if(this.attrs.animation_index>0){
+          this.attrs.animation_index-=1;
+        }
+        this.updateRadarLayer();
+      }
+      updateRadarLayer(){
+        this.attrs.radarLayers.map(layer=>layer.setOpacity(0));
+        this.attrs.radarLayers[this.attrs.animation_index].setOpacity(0.75);
+        this.attrs.time_ctrl.setTime(this.attrs.radarTimes[this.attrs.animation_index]);
+        
+      }
+    }
+    class WeatherRadarPage extends daedalus.DomElement {
+      constructor(){
+        super("div",{className:style.app},[]);
+        this.attrs.header=this.appendChild(new NavHeader());
+        this.attrs.header.addAction(resources.svg.back,()=>{
+            router.back();
+          });
+        this.attrs.map=this.appendChild(new RadarMap());
+      }
+      elementMounted(){
+        this.attrs.map.displayMap();
+      }
+    }
     class App extends daedalus.DomElement {
       constructor(){
         super("div",{},[]);
@@ -2867,6 +3373,18 @@ app=(function(api,components,daedalus,resources,router){
           });
         rt.addRoute(u.plan,(cbk)=>{
             this.handleRoute(cbk,RoutePlanPage);
+          });
+        rt.addRoute(u.weather_location,(cbk)=>{
+            this.handleRoute(cbk,WeatherPage);
+          });
+        rt.addRoute(u.weather_radar,(cbk)=>{
+            this.handleRoute(cbk,WeatherRadarPage);
+          });
+        rt.addRoute(u.weather_wildcard,(cbk)=>{
+            this.handleRoute(cbk,WeatherPage);
+          });
+        rt.addRoute(u.weather,(cbk)=>{
+            this.handleRoute(cbk,WeatherPage);
           });
         rt.setDefaultRoute((cbk)=>{
             this.handleRoute(cbk,TrackerPage);

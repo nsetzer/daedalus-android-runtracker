@@ -186,25 +186,18 @@ public class RunsTable extends EntityTable {
                     index = 0;
                 } else if (distance > 1e-6) {
                     double spm = delta_t / 1000 / distance;
-<<<<<<< HEAD
 
                     if (Math.abs(spm - prev_spm) < .25) {
                         spm = prev_spm;
                     } else {
                         prev_spm = spm;
                     }
-=======
->>>>>>> fd27abd648ebcbfccaf0148605e1634cdc0be3b3
                     index = (int) (spm * SPM_SCALE_FACTOR);
                     if (index >= N_SEGMENTS) {
                         index = N_SEGMENTS - 1;
                     }
                     index += 1;
-<<<<<<< HEAD
 
-=======
-                }
->>>>>>> fd27abd648ebcbfccaf0148605e1634cdc0be3b3
 
                 }
 
@@ -367,8 +360,5 @@ public class RunsTable extends EntityTable {
         Log.info("loaded " + point_count + " points, " + segment_count + " segments.");
     }
 
-<<<<<<< HEAD
 
-=======
->>>>>>> fd27abd648ebcbfccaf0148605e1634cdc0be3b3
 }

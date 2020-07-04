@@ -377,6 +377,122 @@ const style = {
         padding-left: "2em",
         padding-right: "2em",
     }),
+
+    weatherCtrl: StyleSheet({
+        display: "flex",
+        flex-direction: "row",
+        align-items: "center",
+        justify-content: "center",
+        height:'48px',
+        width: "calc(100% - 2em)",
+        background:'white',
+        position:'sticky',
+        top:'48px',
+        border-bottom: "1px solid black",
+        z-index: '500'
+    }),
+
+    weatherCtrlInput: StyleSheet({
+        width: "6em",
+        font-size: "1.5em",
+        padding-top: ".25em",
+        padding-bottom: ".25em",
+        text-align: "center"
+    }),
+
+    weatherCtrlButton: StyleSheet({
+        width: "6em",
+        font-size: "1.5em",
+        padding-top: ".25em",
+        padding-bottom: ".25em",
+    }),
+
+    nwsDay: StyleSheet({
+        height:'48px',
+        background:'white',
+        position:'sticky',
+        border-bottom: "1px solid black",
+        top:'97px',
+        z-index: '250',
+        font-size: "1.5em",
+    }),
+
+    nwsDayRowInfo: StyleSheet({
+        display: 'flex',
+        width: "100%",
+        'flex-direction': 'row',
+        justify-content: "center",
+        align-items: "center",
+    }),
+
+    nwsDayRowInfoLeft: StyleSheet({
+        position: 'absolute',
+        left: "0",
+        margin-left: ".5em"
+    }),
+
+    nwsDayRowInfoRight: StyleSheet({
+        position: 'absolute',
+        right: "0",
+        margin-right: ".5em"
+    }),
+
+    nwsDayColGrow: StyleSheet({
+        font-size: ".8em",
+        display: 'flex',
+        'flex-direction': 'column',
+        'flex-grow': '1',
+        justify-content: "center",
+        align-items: "center",
+        padding: ".5em",
+    }),
+
+    nwsItem: StyleSheet({
+        display: 'flex',
+        'flex-direction': 'row',
+        padding: "0",
+        border-bottom: "1px solid black",
+        width: 'calc(100%)',
+        background-color: "white",
+    }),
+
+    nwsItemColImage: StyleSheet({
+        font-size: "1.2em",
+        display: 'flex',
+        'flex-direction': 'column',
+        justify-content: "center",
+        align-items: "center",
+    }),
+
+    nwsItemColFixed: StyleSheet({
+        font-size: "1.2em",
+        display: 'flex',
+        'flex-direction': 'column',
+        justify-content: "center",
+        align-items: "center",
+        width: "4em",
+        min-width: "4em",
+    }),
+
+    nwsItemColTime: StyleSheet({
+        font-size: "1.2em",
+        font-family: "monospace",
+        display: 'flex',
+        'flex-direction': 'column',
+        justify-content: "center",
+        align-items: "flex-end",
+        min-width: "4em",
+        width: "4em",
+    }),
+
+    nwsItemColGrow: StyleSheet({
+        font-size: ".8em",
+        display: 'flex',
+        'flex-direction': 'column',
+        'flex-grow': '1',
+        justify-content: "center",
+        padding: ".5em",
+    }),
 }
 
 function pad(n, width, z) {
@@ -443,7 +559,6 @@ class SwitchElement extends Div {
     isChecked() {
         return this.attrs.btn.hasClassName(style.switchButtonActive)
     }
-
 }
 
 class SvgElement extends DomElement {
@@ -532,6 +647,10 @@ class TrackerPage extends daedalus.DomElement {
         this.attrs.header.addElement(new components.HSpacer("1em"));
         this.attrs.header.addAction(resources.svg.map, ()=>{
             router.navigate(router.routes.plan())
+        })
+        this.attrs.header.addElement(new components.HSpacer("1em"));
+        this.attrs.header.addAction(resources.svg.cloud, ()=>{
+            router.navigate(router.routes.weather({path:''}))
         })
         this.attrs.header.addElement(new components.HSpacer("1em"));
 
@@ -775,6 +894,7 @@ class SettingsPage extends daedalus.DomElement {
 }
 
 const month_short_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const week_long_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 class LogListItem extends daedalus.DomElement {
     constructor(parent, item) {
@@ -1827,6 +1947,7 @@ class DistanceMap extends daedalus.DomElement {
         this.attrs.ptnd_split.style['background'] = (this.attrs.ptopt_add||this.attrs.ptopt_remove)?'#FFFFFF':'#999999'
 
         new L.marker(pt,{}).addTo(this.attrs.map);
+
     }
 
     handleMapClick(e) {
@@ -2012,6 +2133,557 @@ class RoutePlanPage extends daedalus.DomElement {
     }
 }
 
+class PostalCodeListItem extends daedalus.DomElement {
+    constructor(code) {
+        super("div", {className: style.nwsItem}, [])
+
+        let col2 = this.appendChild(new daedalus.DomElement("div", {className: style.nwsItemColGrow}))
+
+        let row;
+        row = col2.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        row.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`${code}`)]))
+    }
+}
+
+class NwsForecastHourItem extends daedalus.DomElement {
+    constructor(parent, item) {
+        super("div", {className: style.nwsItem}, [])
+
+        this.attrs.parent = parent;
+        this.attrs.item = item;
+
+        let col1 = this.appendChild(new daedalus.DomElement("div", {className: style.nwsItemColImage}))
+        let colTime = this.appendChild(new daedalus.DomElement("div", {className: style.nwsItemColTime}))
+        let col2 = this.appendChild(new daedalus.DomElement("div", {className: style.nwsItemColGrow}))
+        //let col3 = this.appendChild(new daedalus.DomElement("div", {className: style.nwsItemColFixed}))
+        let colTmp = this.appendChild(new daedalus.DomElement("div", {className: style.nwsItemColFixed}))
+
+        let tmp;
+        let row;
+
+        let dt = new Date(item.startTime)
+
+        col1.appendChild(new daedalus.DomElement("img", {src: item.icon, width: 64, height: 64}, []))
+
+        row = colTime.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        row.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`${pad(dt.getHours(), 2, '\xa0')}:${pad(dt.getMinutes(), 2)}`)]))
+
+        row = colTmp.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        row.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`${item.temperature} ${item.temperatureUnit}`)]))
+
+        row = col2.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        row.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`${item.shortForecast}`)]))
+
+        //row = col3.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        //row.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`${item.windDirection}`)]))
+
+        //row = col3.appendChild(new daedalus.DomElement("div", {className: style.logItemRowInfo}, []))
+        //row.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`${item.windSpeed}`)]))
+
+    }
+
+}
+
+class NwsForecastDayItem extends daedalus.DomElement {
+    constructor(parent, day) {
+        super("div", {className: style.nwsDay}, [])
+
+        this.attrs.parent = parent;
+        this.attrs.day = day;
+
+        let col2 = this.appendChild(new daedalus.DomElement("div", {className: style.nwsDayColGrow}))
+
+        let tmp;
+        let row;
+
+        let date = pad(day.year, 2) + "/" + pad(day.month, 2) + "/" + pad(day.day, 2)
+
+        row = col2.appendChild(new daedalus.DomElement("div", {className: style.nwsDayRowInfo}, []))
+
+
+        row.appendChild(new daedalus.DomElement("div", {className: style.nwsDayRowInfoLeft}, [new daedalus.TextElement(day.weekday)]))
+        row.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`${date}`)]))
+        row.appendChild(new daedalus.DomElement("div", {className: style.nwsDayRowInfoRight}, [new daedalus.TextElement(`\u2191${day.temperature.hi} ${day.temperature.unit}\xa0\u2193${day.temperature.lo} ${day.temperature.unit}`)]))
+
+    }
+
+    onClick() {
+        this.toggleContent();
+    }
+
+    toggleContent() {
+
+        this.attrs.parent.attrs.show_content = !this.attrs.parent.attrs.show_content;
+
+        this.attrs.parent.attrs.hours.forEach(hour => {
+            hour.getDomNode().style.display = this.attrs.parent.attrs.show_content?null:"none";
+        })
+
+    }
+
+}
+
+class SampleListView extends daedalus.DomElement {
+    constructor() {
+        super("div", {className: style.logView}, [])
+    }
+
+    clear() {
+        this.removeChildren();
+    }
+
+    addItem(item) {
+        this.appendChild()
+    }
+
+    addDay(day) {
+
+        let div = new Div();
+        div.attrs.hours = []
+        div.attrs.show_content = true
+
+        let hdr = div.appendChild(new NwsForecastDayItem(div, day))
+
+        day.data.forEach(item => {
+            let child = new NwsForecastHourItem(div, item)
+            div.appendChild(child)
+            div.attrs.hours.push(child)
+
+        })
+
+        this.appendChild(div)
+
+    }
+
+    hideContent() {
+
+        this.children.forEach(child => {
+            child.attrs.show_content = false;
+            child.attrs.hours.forEach(hour => {
+                hour.getDomNode().style.display = "none";
+            })
+        })
+    }
+}
+
+class WeatherDashboard extends daedalus.DomElement {
+    constructor(parent) {
+        super("div", {className: style.weatherCtrl}, [])
+
+        this.attrs.parent = parent;
+
+        this.attrs.input_code = this.appendChild(new daedalus.TextInputElement("00000"))
+        this.attrs.input_code.props.className = style.weatherCtrlInput
+        this.attrs.input_code.props.type = "number"
+
+        this.attrs.btn_refresh = this.appendChild(new daedalus.ButtonElement("Refresh", this.handleRefresh.bind(this)))
+        this.attrs.btn_refresh.props.className = style.weatherCtrlButton
+
+        this.attrs.btn_refresh = this.appendChild(new daedalus.ButtonElement("Minimize", this.handleMinimize.bind(this)))
+        this.attrs.btn_refresh.props.className = style.weatherCtrlButton
+    }
+
+    setPostalCode(code) {
+        this.attrs.input_code.setText(code)
+    }
+
+    handleRefresh() {
+        this.attrs.parent.changeLocationByPostalCode(this.attrs.input_code.getText())
+    }minimizeForecast
+
+    handleMinimize() {
+        this.attrs.parent.minimizeForecast()
+    }
+}
+
+class WeatherPage extends daedalus.DomElement {
+
+    constructor() {
+        super("div", {className: style.app}, [])
+
+        this.attrs.header = this.appendChild(new NavHeader())
+        this.attrs.header.addAction(resources.svg.back, ()=>{
+            router.navigate(router.routes.landing())
+        })
+        this.attrs.header.addElement(new components.HSpacer("1em"));
+        this.attrs.header.addAction(resources.svg.radar, ()=>{
+            router.navigate(router.routes.weather_radar())
+        })
+        this.attrs.header.addElement(new components.HSpacer("1em"));
+
+        this.attrs.dashboard = this.appendChild(new WeatherDashboard(this))
+
+        this.attrs.list = this.appendChild(new SampleListView());
+
+        this.appendChild(new components.VSpacer("25vh"))
+
+        let periods = [
+            {
+                "number": 1,
+                "name": "",
+                "startTime": "2020-07-03T09:00:00-04:00",
+                "endTime": "2020-07-03T10:00:00-04:00",
+                "isDaytime": true,
+                "temperature": 71,
+                "temperatureUnit": "F",
+                "temperatureTrend": null,
+                "windSpeed": "12 mph",
+                "windDirection": "NE",
+                "icon": "https://api.weather.gov/icons/land/day/ovc?size=small",
+                "shortForecast": "Cloudy",
+                "detailedForecast": ""
+            },
+            {
+                "number": 2,
+                "name": "",
+                "startTime": "2020-07-03T10:00:00-04:00",
+                "endTime": "2020-07-03T11:00:00-04:00",
+                "isDaytime": true,
+                "temperature": 70,
+                "temperatureUnit": "F",
+                "temperatureTrend": null,
+                "windSpeed": "13 mph",
+                "windDirection": "NE",
+                "icon": "https://api.weather.gov/icons/land/day/rain_showers,80?size=small",
+                "shortForecast": "Slight Chance Rain Showers",
+                "detailedForecast": ""
+            },
+        ]
+
+        this.setPeriods(periods)
+
+    }
+
+    elementMounted() {
+        console.log(this.state)
+
+        let pt;
+        if (!this.state.match.lat||!this.state.match.lon) {
+            pt = api.getLastKnownLocation()
+            router.navigate(router.routes.weather_location(pt))
+            this.state.match = pt;
+        } else {
+            pt = this.state.match
+        }
+
+        this.changeLocationByLocation(pt)
+    }
+
+    changeLocationByLocation(pt) {
+        if (pt !== null) {
+
+            let postal_code = api.zipGetPostalCode(pt.lat, pt.lon)
+            this.attrs.dashboard.setPostalCode(postal_code)
+
+            /*
+            api.geoGetPostalCode(pt.lat, pt.lon)
+                .then(result => {
+                    this.handleGetPostalCode(result);
+                })
+                .catch(error => {
+                    console.log(error)
+                })
+            */
+
+            this.attrs.list.clear()
+            api.nwsGetEndpoints(pt.lat, pt.lon)
+                .then(result => {
+                    this.handleGetEndpoints(result.properties);
+                })
+                .catch(error => {
+                    console.log(error)
+                })
+        }
+    }
+
+    changeLocationByPostalCode(postal_code) {
+
+        let pt = api.zipGetPostalCodeInfo(postal_code)
+        if (pt !== null) {
+            this.attrs.dashboard.setPostalCode(postal_code)
+            this.attrs.list.clear()
+            api.nwsGetEndpoints(pt.lat, pt.lon)
+                .then(result => {
+                    this.handleGetEndpoints(result.properties);
+                })
+                .catch(error => {
+                    console.log(error)
+                })
+        }
+    }
+
+    minimizeForecast() {
+        this.attrs.list.hideContent();
+    }
+
+    handleGetEndpoints(props) {
+        console.log(props)
+        let info = {id: props.gridId, x: props.gridX, y: props.gridY}
+
+        api.nwsGetHourlyForecast(info.id, info.x, info.y)
+            .then(result => {
+                this.handleGetHourlyForecast(result.properties);
+            })
+            .catch(error => {
+                console.log(error)
+            })
+    }
+
+    handleGetHourlyForecast(props) {
+
+        //console.log(props.periods)
+        this.setPeriods(props.periods)
+    }
+
+    handleGetPostalCode(result) {
+
+        console.log(result)
+    }
+
+    setPeriods(periods) {
+
+        // https://stackoverflow.com/questions/54689034/pure-css-multiple-stacked-position-sticky
+        // create a separate list for each day
+        // each day gets a header which is sticky
+
+        //let date = pad(dt.getFullYear(), 2) + "/" + pad(1+dt.getMonth(), 2) + "/" + pad(dt.getDate(), 2)
+
+        this.attrs.list.clear()
+
+        let days = []
+        let previous_day = -1;
+
+        for (let i=0; i < periods.length; i++) {
+            let item = periods[i];
+            let dt = new Date(item.startTime);
+            if (dt.getDay() !== previous_day) {
+
+                let day = {
+                    year: dt.getFullYear(),
+                    month: 1 + dt.getMonth(),
+                    day: dt.getDate(),
+                    weekday: week_long_names[dt.getDay()],
+                    temperature: {hi: 0, lo:200, unit: item.temperatureUnit},
+                    data: []
+                }
+
+                days.push(day)
+
+                previous_day = dt.getDay()
+            }
+
+            if (item.temperature > days[days.length - 1].temperature.hi) {
+                days[days.length - 1].temperature.hi = item.temperature
+            }
+
+            if (item.temperature < days[days.length - 1].temperature.lo) {
+                days[days.length - 1].temperature.lo = item.temperature
+            }
+
+            days[days.length - 1].data.push(item)
+        }
+
+        days.forEach(day => {
+            this.attrs.list.addDay(day)
+        })
+    }
+}
+
+let TimeCtrl = L.Control.extend({
+  onAdd: function(map) {
+    var el = L.DomUtil.create('div', 'leaflet-bar my-control');
+
+    el.innerHTML = 'Distance: 0.000k';
+    el.style['font-size']="1.5em"
+    el.style.padding=".5em"
+    el.style['background-color'] = "white"
+
+    return el;
+  },
+
+  onRemove: function(map) {
+    // Nothing to do here
+  },
+
+  setTime: function(time) {
+    this.getContainer().innerHTML = "" + time
+  }
+});
+
+class RadarMap extends daedalus.DomElement {
+
+    constructor() {
+        super("div", {className: style.map2}, [])
+
+
+        this.attrs = {
+            animation_index: 0,
+            animation_timer: null,
+        }
+
+    }
+
+    displayMap() {
+
+        const pt = api.getLastKnownLocation()
+
+        this.attrs.map = L.map(this.props.id).setView([pt.lat, pt.lon], 10)
+
+        new L.marker(pt,{}).addTo(this.attrs.map);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> | &copy; <a href="https://mesonet.agron.iastate.edu/ogc/">OGC</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(this.attrs.map);
+
+        this.attrs.time_ctrl = new TimeCtrl({position: 'topright'})
+        this.attrs.time_ctrl.addTo(this.attrs.map);
+
+        this.attrs.ptnd_pp  = this.addControl(resources.svg.map_pause, "Pause Animation", this.handlePtPlayPauseClicked.bind(this));
+        this.attrs.ptnd_inc = this.addControl(resources.svg.map_inc, "Step Forward", this.handlePtStepForwardClicked.bind(this));
+        this.attrs.ptnd_dec = this.addControl(resources.svg.map_dec, "Step Backward", this.handlePtStepBackwardClicked.bind(this));
+
+        let radarLayers = [];
+        let radarTimes = []
+        // round current time down to nearest 5 minute interval
+        let scale = (5 * 60 * 1000)
+        let now = Math.floor(Date.now() /scale ) * scale
+
+        console.log(now)
+        for(let time = 50; time > 5; time -= 5){
+            let name = 'nexrad-n0q-900913-m'+pad(time,2)+'m'
+            let layer = L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi", {
+                layers: name,
+                format: 'image/png',
+                transparent: true,
+                opacity: 0.0,
+            });
+            radarLayers.push(layer);
+            layer.addTo(this.attrs.map);
+
+            let dt = new Date(now - time * 60 * 1000)
+            radarTimes.push(`${dt.getHours()}:${pad(dt.getMinutes(),2)}`)
+        }
+
+        let name = 'nexrad-n0q-900913'
+        let layer = L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi", {
+            layers: name,
+            format: 'image/png',
+            transparent: true,
+            opacity: 0.0,
+        });
+        radarLayers.push(layer);
+        let dt = new Date(now)
+        radarTimes.push(`${dt.getHours()}:${pad(dt.getMinutes(),2)}`)
+
+        this.attrs.time_ctrl.setTime(radarTimes[0])
+
+
+        layer.addTo(this.attrs.map);
+
+        this.attrs.radarLayers = radarLayers;
+        this.attrs.radarTimes = radarTimes;
+
+        this.startAnimation()
+
+    }
+
+    addControl(icon, title, fn) {
+
+        /*
+            this works by setting the inner html of a link <a href=...>
+
+        */
+        let html = '<img src="' + icon + '" style="margin-top: 3px;" width="24" height="24">'
+        let className = "leaflet-control-zoom-out"
+        let node = this.attrs.map.zoomControl._createButton(
+            html, title, className,
+            this.attrs.map.zoomControl._container, fn);
+
+        return node;
+    }
+
+    startAnimation() {
+        this.attrs.animation_index = -1
+        this.attrs.animation_timer =  setInterval(this.handleAnimationTimeout.bind(this), 1000)
+    }
+
+    stopAnimation() {
+        if (this.attrs.animation_timer!==null) {
+            clearInterval(this.attrs.animation_timer)
+            this.attrs.animation_timer = null;
+        }
+    }
+
+    handleAnimationTimeout() {
+
+
+        this.attrs.animation_index += 1
+
+        if (this.attrs.animation_index >= this.attrs.radarLayers.length) {
+            this.attrs.animation_index = 0
+        }
+
+        this.updateRadarLayer()
+    }
+
+    elementUnmounted() {
+        this.stopAnimation()
+    }
+
+    handlePtPlayPauseClicked() {
+        if (this.attrs.animation_timer!==null) {
+            this.stopAnimation()
+            this.attrs.ptnd_pp.firstChild.src = resources.svg.map_play
+        } else {
+            this.startAnimation()
+            this.attrs.ptnd_pp.firstChild.src = resources.svg.map_pause
+        }
+    }
+
+    handlePtStepForwardClicked() {
+
+        if (this.attrs.animation_index < this.attrs.radarLayers.length - 1) {
+            this.attrs.animation_index += 1
+        }
+        this.updateRadarLayer()
+    }
+
+    handlePtStepBackwardClicked() {
+        if (this.attrs.animation_index > 0) {
+            this.attrs.animation_index -= 1
+        }
+        this.updateRadarLayer()
+    }
+
+    updateRadarLayer() {
+        this.attrs.radarLayers.map(layer => layer.setOpacity(0));
+        this.attrs.radarLayers[this.attrs.animation_index].setOpacity(0.75);
+
+        this.attrs.time_ctrl.setTime(this.attrs.radarTimes[this.attrs.animation_index])
+    }
+}
+
+class WeatherRadarPage extends daedalus.DomElement {
+
+    constructor() {
+        super("div", {className: style.app}, [])
+
+        this.attrs.header = this.appendChild(new NavHeader())
+        this.attrs.header.addAction(resources.svg.back, ()=>{
+            router.back()
+        })
+
+        this.attrs.map = this.appendChild( new RadarMap() );
+
+    }
+
+    elementMounted() {
+        this.attrs.map.displayMap()
+    }
+}
+
 export class App extends daedalus.DomElement {
 
     constructor() {
@@ -2044,6 +2716,10 @@ export class App extends daedalus.DomElement {
         rt.addRoute(u.log,      (cbk)=>{this.handleRoute(cbk, LogPage)});
         rt.addRoute(u.settings, (cbk)=>{this.handleRoute(cbk, SettingsPage)});
         rt.addRoute(u.plan,     (cbk)=>{this.handleRoute(cbk, RoutePlanPage)});
+        rt.addRoute(u.weather_location,     (cbk)=>{this.handleRoute(cbk, WeatherPage)});
+        rt.addRoute(u.weather_radar,        (cbk)=>{this.handleRoute(cbk, WeatherRadarPage)});
+        rt.addRoute(u.weather_wildcard,     (cbk)=>{this.handleRoute(cbk, WeatherPage)});
+        rt.addRoute(u.weather,              (cbk)=>{this.handleRoute(cbk, WeatherPage)});
         //rt.addRoute(u.wildCard, (cbk)=>{this.handleRoute(cbk, TrackerPage)});
         rt.setDefaultRoute(     (cbk)=>{
             this.handleRoute(cbk, TrackerPage)

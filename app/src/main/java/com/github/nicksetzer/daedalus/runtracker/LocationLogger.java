@@ -102,7 +102,6 @@ public class LocationLogger {
 
     public void push(double lat, double lon, long abstime, long delta_t, double distance, long split, boolean paused, boolean dropped) {
 
-        Log.info("got here,", m_enabled, m_ostream == null);
         if (!m_enabled) {
             end();
         }

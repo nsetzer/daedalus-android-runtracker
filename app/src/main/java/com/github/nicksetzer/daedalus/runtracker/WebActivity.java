@@ -63,12 +63,17 @@ public class WebActivity extends Activity {
 
         requestLocationPermission();
 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setShowWhenLocked(true);
-
         m_receiver = new ServiceEventReceiver();
     }
 
+    public void enableShowWhenLocked(boolean enable) {
+        if (enable) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+        setShowWhenLocked(enable);
+    }
     private void requestLocationPermission(){
 
         if (this.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)){

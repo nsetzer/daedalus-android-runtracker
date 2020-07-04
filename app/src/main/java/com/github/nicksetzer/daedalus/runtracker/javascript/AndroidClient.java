@@ -3,6 +3,7 @@ package com.github.nicksetzer.daedalus.runtracker.javascript;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
 import android.webkit.JavascriptInterface;
 
 import com.github.nicksetzer.daedalus.runtracker.BuildConfig;
@@ -23,11 +24,18 @@ public class AndroidClient {
     }
 
     @JavascriptInterface
-    public void enableTracking(boolean enable) {
+    public void enableTracking(final boolean enable) {
 
         Intent intent = new Intent(m_activity, WebService.class);
         intent.setAction((enable)? WebService.ACTION_START_TRACKING:WebService.ACTION_STOP_TRACKING);
         m_activity.startForegroundService(intent);
+
+        Handler mainHandler = new Handler(m_activity.getMainLooper());
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {m_activity.enableShowWhenLocked(enable);}
+        });
+
         return;
     }
 

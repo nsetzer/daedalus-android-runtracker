@@ -19,11 +19,19 @@ export function navigate(location) {
     history.pushState({}, "", location)
 }
 
+export function back(location) {
+    history.back()
+}
+
 export const route_urls = {
     logEntry: "/log/:entry",
     log: "/log",
     settings: "/settings",
     plan: "/plan",
+    weather_location: "/weather/forecast/:lat/:lon/hourly",
+    weather_radar: "/weather/radar",
+    weather_wildcard: "/weather/:path",
+    weather: "/weather",
     wildCard: "/:path*",
     landing: "/",
 }

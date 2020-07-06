@@ -17,7 +17,10 @@ public class WebLocationListener implements LocationListener {
     public void onLocationChanged(Location location) {
         double lat = location.getLatitude();
         double lon = location.getLongitude();
-        m_tracker.push(lat, lon);
+        double alt = location.getAltitude();
+        float spd = location.getSpeed(); // meters per second
+        float acc = location.getSpeedAccuracyMetersPerSecond();
+        m_tracker.push(lat, lon, alt, spd, acc);
         //if (!m_tracker.isPaused()) {
         m_service.sendEvent("onlocationupdate", m_tracker.status());
         //}

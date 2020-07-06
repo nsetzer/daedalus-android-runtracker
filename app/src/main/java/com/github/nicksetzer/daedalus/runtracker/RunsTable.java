@@ -133,6 +133,24 @@ public class RunsTable extends EntityTable {
         return obj;
     }
 
+    private static double parseDouble(String str) {
+        try {
+            return Double.parseDouble(str.trim());
+        }catch (NumberFormatException e) {
+            Log.error("error parsing double" ,e);
+        }
+        return 0.0;
+    }
+
+    private static long parseLong(String str) {
+        try {
+            return Long.parseLong(str.trim());
+        }catch (NumberFormatException e) {
+            Log.error("error parsing long" ,e);
+        }
+        return 0;
+    }
+
     public static void loadPoints(JSONObject obj, String log_path) throws JSONException {
 
         final int N_SEGMENTS = 10;
@@ -175,13 +193,52 @@ public class RunsTable extends EntityTable {
                     continue;
                 }
 
-                long split = Long.parseLong(parts[1].trim());
-                double lat = Double.parseDouble(parts[2].trim());
-                double lon = Double.parseDouble(parts[3].trim());
-                double distance = Double.parseDouble(parts[4].trim());
-                long delta_t = Long.parseLong(parts[5].trim());
-                long dropped = Long.parseLong(parts[7].trim());
-                int index = -1;
+                int offset = (parts.length == 9)?1:0;
+                int index;
+                long delta_t=0, dropped=0;
+                double lat=0, lon=0, alt=0, distance=0, spd=0, acc=0;
+
+                //split = Long.parseLong(parts[1].trim());
+                Log.warn("" + parts.length, line);
+                if (parts.length == 12) {
+                    // abstime
+                    // split
+                    lat = parseDouble(parts[2]);
+                    lon = parseDouble(parts[3]);
+                    alt = parseDouble(parts[4]);
+                    distance = parseDouble(parts[5]);
+                    delta_t = parseLong(parts[6]);
+                    spd = parseDouble(parts[7]);
+                    acc = parseDouble(parts[8]);
+                    // paused
+                    dropped = parseLong(parts[10]);
+                } else if (parts.length == 9) {
+                    // abstime
+                    // split
+                    lat = Double.parseDouble(parts[2].trim());
+                    lon = Double.parseDouble(parts[3].trim());
+                    alt = Double.parseDouble(parts[4].trim());
+                    distance = Double.parseDouble(parts[5].trim());
+                    delta_t = Long.parseLong(parts[6].trim());
+                    dropped = Long.parseLong(parts[8].trim());
+                } else {
+                    // abstime
+                    // split
+                    lat = Double.parseDouble(parts[2].trim());
+                    lon = Double.parseDouble(parts[3].trim());
+                    distance = Double.parseDouble(parts[4].trim());
+                    delta_t = Long.parseLong(parts[5].trim());
+                    // paused
+                    dropped = Long.parseLong(parts[7].trim());
+
+                    alt = 0;
+                    spd = 0;
+                    acc = 0;
+                }
+
+
+                index = -1;
+
                 if (dropped==1) {
                     index = 0;
                 } else if (distance > 1e-6) {
@@ -205,6 +262,7 @@ public class RunsTable extends EntityTable {
 
                 pt.put(lat);
                 pt.put(lon);
+                pt.put(alt);
                 pt.put(index);
                 pt.put(distance);
                 pt.put(delta_t);

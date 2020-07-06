@@ -100,7 +100,7 @@ public class LocationLogger {
 
     }
 
-    public void push(double lat, double lon, long abstime, long delta_t, double distance, long split, boolean paused, boolean dropped) {
+    public void push(double lat, double lon, double alt, long abstime, long delta_t, double distance, float spd, float acc, long split, boolean paused, boolean dropped) {
 
         if (!m_enabled) {
             end();
@@ -111,21 +111,17 @@ public class LocationLogger {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append(abstime);
-        sb.append(", ");
-        sb.append(split);
-        sb.append(", ");
-        sb.append(lat);
-        sb.append(", ");
-        sb.append(lon);
-        sb.append(", ");
-        sb.append(distance);
-        sb.append(", ");
-        sb.append(delta_t);
-        sb.append(", ");
-        sb.append(paused?1:0);
-        sb.append(", ");
-        sb.append(dropped?1:0);
+        sb.append(abstime);     sb.append(", "); // 0
+        sb.append(split);       sb.append(", "); // 1
+        sb.append(lat);         sb.append(", "); // 2
+        sb.append(lon);         sb.append(", "); // 3
+        sb.append(alt);         sb.append(", "); // 4
+        sb.append(distance);    sb.append(", "); // 5
+        sb.append(delta_t);     sb.append(", "); // 6
+        sb.append(spd);         sb.append(", "); // 7
+        sb.append(acc);         sb.append(", "); // 8
+        sb.append(paused?1:0);  sb.append(", "); // 9
+        sb.append(dropped?1:0); sb.append(", "); //10
         sb.append("\n");
 
         try {

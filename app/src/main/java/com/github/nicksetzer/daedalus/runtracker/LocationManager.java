@@ -233,7 +233,7 @@ public class LocationManager {
                         return;
                     }
 
-                    m_trackerBest.push(sample[0], sample[1]);
+                    m_trackerBest.push(sample[0], sample[1], 0, 0, 0);
 
                     if (!m_trackerBest.isPaused()) {
                         m_service.sendEvent("onlocationupdate", m_trackerBest.status());

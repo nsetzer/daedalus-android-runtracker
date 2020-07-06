@@ -117,7 +117,15 @@ public class LocationTracker {
         reset();
     }
 
-    public void push(double lat, double lon) {
+    /**
+     *
+     * @param lat
+     * @param lon
+     * @param alt
+     * @param spd
+     * @param acc  speed accuracy: 1 indicates 68% accuracy that the true speed is spd+/-1
+     */
+    public void push(double lat, double lon, double alt, float spd, float acc) {
 
         double distance = 0.0;
         long delta_t = 0;
@@ -140,7 +148,7 @@ public class LocationTracker {
         }
 
         //if (m_loggingEnabled) {
-        m_logger.push(lat, lon, current_time, delta_t, distance, m_current_split, m_paused, m_paused || drop);
+        m_logger.push(lat, lon, alt, current_time, delta_t, distance, spd, acc, m_current_split, m_paused, m_paused || drop);
         //}
 
         m_paceTracker.push(distance, delta_t);

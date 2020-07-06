@@ -1746,13 +1746,14 @@ app=(function(api,components,daedalus,resources,router){
           logItemCol2:'dcs-2e988578-24',logItemRowTitle:'dcs-2e988578-25',logItemRowInfo:'dcs-2e988578-26',
           logItemActions:'dcs-2e988578-27',logEntryView:'dcs-2e988578-28',map:'dcs-2e988578-29',
           map2:'dcs-2e988578-30',chart:'dcs-2e988578-31',trackBar:'dcs-2e988578-32',trackBar_bar:'dcs-2e988578-33',
-          trackBar_button:'dcs-2e988578-34',switchMain:'dcs-2e988578-35',switchMainActive:'dcs-2e988578-36',
-          switchButton:'dcs-2e988578-37',switchButtonActive:'dcs-2e988578-38',settingsRow:'dcs-2e988578-39',
-          weatherCtrl:'dcs-2e988578-40',weatherCtrlInput:'dcs-2e988578-41',weatherCtrlButton:'dcs-2e988578-42',
-          nwsDay:'dcs-2e988578-43',nwsDayRowInfo:'dcs-2e988578-44',nwsDayRowInfoLeft:'dcs-2e988578-45',
-          nwsDayRowInfoRight:'dcs-2e988578-46',nwsDayColGrow:'dcs-2e988578-47',nwsItem:'dcs-2e988578-48',
-          nwsItemColImage:'dcs-2e988578-49',nwsItemColFixed:'dcs-2e988578-50',nwsItemColTime:'dcs-2e988578-51',
-          nwsItemColGrow:'dcs-2e988578-52'};
+          trackBar_button:'dcs-2e988578-34',trackBar_text_left:'dcs-2e988578-35',trackBar_text_right:'dcs-2e988578-36',
+          switchMain:'dcs-2e988578-37',switchMainActive:'dcs-2e988578-38',switchButton:'dcs-2e988578-39',
+          switchButtonActive:'dcs-2e988578-40',settingsRow:'dcs-2e988578-41',weatherCtrl:'dcs-2e988578-42',
+          weatherCtrlInput:'dcs-2e988578-43',weatherCtrlButton:'dcs-2e988578-44',weatherError:'dcs-2e988578-45',
+          weatherErrorHide:'dcs-2e988578-46',nwsDay:'dcs-2e988578-47',nwsDayRowInfo:'dcs-2e988578-48',
+          nwsDayRowInfoLeft:'dcs-2e988578-49',nwsDayRowInfoRight:'dcs-2e988578-50',nwsDayColGrow:'dcs-2e988578-51',
+          nwsItem:'dcs-2e988578-52',nwsItemColImage:'dcs-2e988578-53',nwsItemColFixed:'dcs-2e988578-54',
+          nwsItemColTime:'dcs-2e988578-55',nwsItemColGrow:'dcs-2e988578-56'};
     function pad(n,width,z){
       z=z||'0';
       n=n+'';
@@ -2225,18 +2226,21 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.data=null;
       }
       getSettings(){
-        return{type:["line"],data:{datasets:[{label:"average pace",data:[],backgroundColor:"#000000",
-                              borderColor:"#000000",pointRadius:0,borderWidth:2,fill:false},{label:"current pace",
-                              data:[],backgroundColor:"#008000",borderColor:"#008000",pointRadius:0,
-                              borderWidth:2,fill:false}]},options:{scales:{xAxes:[{type:'linear',
-                                  position:'bottom',ticks:{beginAtZero:false,callback:(value,index,
-                                          values)=>fmtTime(value*1000)}}],yAxes:[{ticks:{beginAtZero:false}}]}}};
+        return{type:["line"],data:{datasets:[{label:"Average Pace",data:[],backgroundColor:"#000000",
+                              borderColor:"#000000",pointRadius:0,borderWidth:2,fill:false,yAxisID:"y_pace"},
+                          {label:"Current Pace",data:[],backgroundColor:"#008000",borderColor:"#008000",
+                              pointRadius:0,borderWidth:2,fill:false,yAxisID:"y_pace"},{label:"Altitude",
+                              data:[],backgroundColor:"#000080",borderColor:"#000080",pointRadius:0,
+                              borderWidth:2,fill:false,yAxisID:"y_alt"}]},options:{scales:{xAxes:[
+                              {type:'linear',position:'bottom',ticks:{beginAtZero:false,callback:(
+                                          value,index,values)=>fmtTime(value*1000)}}],yAxes:[{id:'y_pace',
+                                  display:true,position:"left",type:'linear',ticks:{beginAtZero:false}},
+                              {id:'y_alt',display:true,position:"right",type:'linear',ticks:{beginAtZero:false}}]}}};
         
       }
       elementMounted(){
         if(this.attrs.chart===null){
           let ctxt=this.getDomNode().getContext('2d');
-          console.log("construct new chart");
           this.attrs.chart=new Chart(ctxt,this.getSettings());
           if(this.attrs.data!==null){
             this.setData(this.attrs.data);
@@ -2254,6 +2258,7 @@ app=(function(api,components,daedalus,resources,router){
           let ds=this.attrs.chart.data.datasets;
           ds[0].data=data[0];
           ds[1].data=data[1];
+          ds[2].data=data[2];
           this.attrs.chart.update();
         }
         this.attrs.data=data;
@@ -2275,13 +2280,24 @@ app=(function(api,components,daedalus,resources,router){
         nd.style['background-size']="contain";
       }
     }
+    class TrackBarText extends DomElement {
+      constructor(position){
+        super("div",{className:[position?style.trackBar_text_right:style.trackBar_text_left]},
+                  []);
+        this.attrs.text=this.appendChild(new daedalus.TextElement("00:00"));
+      }
+      setText(text){
+        this.attrs.text.setText(text);
+      }
+    }
     class TrackBar extends DomElement {
       constructor(callback){
         super("div",{className:style.trackBar},[]);
         this.attrs={callback,pressed:false,posA:0,posB:0,maximum:1.0,tposA:0,tposB:0,
                   startx:[0,0],track:this.appendChild(new TrackBarTrack()),btnMin:this.appendChild(
                       new TrackBarButton(resources.svg.marker_L)),btnMax:this.appendChild(new TrackBarButton(
-                          resources.svg.marker_R)),active_btn:-1};
+                          resources.svg.marker_R)),txtLeft:this.appendChild(new TrackBarText(
+                          0)),txtRight:this.appendChild(new TrackBarText(1)),active_btn:-1};
       }
       setTrackColor(color){
         let nd=this.attrs.track.getDomNode();
@@ -2467,6 +2483,10 @@ app=(function(api,components,daedalus,resources,router){
         xpos+=ele.offsetLeft-btn.clientWidth/2;
         btn.style.left=Math.floor(xpos)+"px";
       }
+      setTimeRange(ts,te){
+        this.attrs.txtLeft.setText(fmtTime(ts));
+        this.attrs.txtRight.setText(fmtTime(te));
+      }
     }
     function points2segments(points,start,end){
       const N_SEGMENTS=10;
@@ -2490,7 +2510,7 @@ app=(function(api,components,daedalus,resources,router){
       let i=0;
       for(i=start;i<end;i++)
         {
-          let[lat,lon,index,d,t]=points[i];
+          let[lat,lon,alt,index,d,t]=points[i];
           point=[lat,lon];
           if(index>0){
             distance+=d;
@@ -2529,7 +2549,7 @@ app=(function(api,components,daedalus,resources,router){
       if(end-start<N_MAX_SEGMENTS){
         for(let i=start;i<end;i++)
           {
-            let[lat,lon,index,d,t]=points[i];
+            let[lat,lon,alt,index,d,t]=points[i];
             if(index>=0){
               gradient.push(spm_color_map[index]);
             }
@@ -2538,7 +2558,7 @@ app=(function(api,components,daedalus,resources,router){
         let N=Math.floor((end-start)/N_MAX_SEGMENTS);
         for(let i=start;i<end;i+=N)
           {
-            let data=points.slice(i,i+N).map(item=>item[2]).filter(v=>v>=0);
+            let data=points.slice(i,i+N).map(item=>item[3]).filter(v=>v>=0);
             let index=Math.floor(data.reduce((a,b)=>a+b,0)/data.length);
             gradient.push(spm_color_map[index]);
           }
@@ -2549,7 +2569,7 @@ app=(function(api,components,daedalus,resources,router){
       const values=[];
       let mapfn=(v,i)=>v*b[i];
       let redfn=(v1,v2)=>v1+v2;
-      return(p)=>{
+      let fn=(p)=>{
         values.push(p);
         if(values.length>b.length){
           values.shift();
@@ -2560,43 +2580,8 @@ app=(function(api,components,daedalus,resources,router){
           return 0.0;
         }
       };
-    }
-    function points2pace(points,start,end){
-      if(start===undefined||start<0){
-        start=0;
-      }
-      if(end===undefined||end>points.length){
-        end=points.length;
-      }
-      const dataset0=[];
-      const dataset1=[];
-      let distance=0.0;
-      let elapsed_time=0;
-      let i;
-      for(i=0;i<start;i++)
-        {
-          let[lat,lon,index,d,t]=points[i];
-          if(index<1){
-            continue;
-          }
-          distance+=d;
-          elapsed_time+=t;
-        }
-      let filter=filt([0.1,0.1,0.2,0.2,0.4]);
-      for(i=start;i<end;i++)
-        {
-          let[lat,lon,index,d,t]=points[i];
-          if(index<1){
-            continue;
-          }
-          distance+=d;
-          elapsed_time+=t;
-          let y1=(distance>1e-6)?(elapsed_time/1000.0/distance):0.0;
-          dataset0.push(pt(elapsed_time/1000.0,y1*spm_to_mpk));
-          let y2=(d>1e-6)?(t/1000.0/d):0.0;
-          dataset1.push(pt(elapsed_time/1000.0,filter(y2)*spm_to_mpk));
-        }
-      return[dataset0,dataset1];
+      fn.size=b.length;
+      return fn;
     }
     function points2pace2(points,start,end){
       if(start===undefined||start<0){
@@ -2607,20 +2592,32 @@ app=(function(api,components,daedalus,resources,router){
       }
       const dataset0=[];
       const dataset1=[];
+      const dataset2=[];
       let distance=0.0;
       let elapsed_time=0;
       let filter=filt([0.1,0.1,0.2,0.2,0.4]);
+      let filter2=filt([.2,.2,.2,.2,.2]);
       let i;
+      if(points.length>0){
+        for(i=0;i<filter.size;i++)
+          {
+            let[lat,lon,alt,index,d,t]=points[1];
+            filter((d>1e-6)?(t/1000.0/d):0.0);
+            filter2(alt);
+          }
+      }
       for(i=0;i<start;i++)
         {
-          let[lat,lon,index,d,t]=points[i];
+          let[lat,lon,alt,index,d,t]=points[i];
           if(index<1){
             continue;
           }
           distance+=d;
           elapsed_time+=t;
           filter((d>1e-6)?(t/1000.0/d):0.0);
+          filter2(alt);
         }
+      const ts=elapsed_time;
       let N_POINTS=200;
       let N=end-start;
       let step=Math.floor(N/N_POINTS);
@@ -2632,16 +2629,18 @@ app=(function(api,components,daedalus,resources,router){
           let ad=0.0;
           let at=0;
           let ap=0;
+          let aa=0.0;
           let n=0;
           for(let j=i;j<end&&j<i+step;j++)
             {
-              let[lat,lon,index,d,t]=points[i];
+              let[lat,lon,alt,index,d,t]=points[i];
               if(index<1){
                 continue;
               }
               ad+=d;
               at+=t;
               ap+=filter((d>1e-6)?(t/1000.0/d):0.0);
+              aa+=filter2(alt);
               n+=1;
             }
           distance+=ad;
@@ -2652,9 +2651,11 @@ app=(function(api,components,daedalus,resources,router){
             let y2=ap/n;
             dataset0.push(pt(x,y1*spm_to_mpk));
             dataset1.push(pt(x,y2*spm_to_mpk));
+            dataset2.push(pt(x,aa/n));
           }
         }
-      return[dataset0,dataset1];
+      const te=elapsed_time;
+      return{data:[dataset0,dataset1,dataset2],ts,te};
     }
     class LogEntryPage extends daedalus.DomElement {
       constructor(){
@@ -2728,13 +2729,16 @@ app=(function(api,components,daedalus,resources,router){
           let N=1800;
           let lat=40;
           let lon=-75;
-          sample.points.push([40,-75,-1,0.0,0]);
+          let alt=900;
+          sample.points.push([lat,lon,alt,-1,0.0,0]);
           for(let i=0;i<N;i++)
             {
               let index=1+Math.floor(10*i/N);
               lat+=1e-5*(Math.random()*10)*((i>N/2)?-1:1);
               lon-=1e-5*(Math.random()*10);
-              sample.points.push([lat,lon,index,8-2*i/N+Math.random()*.5,2000]);
+              alt+=(6-(Math.random()*10));
+              sample.points.push([lat,lon,alt,index,8-2*i/N+Math.random()*.5,2000]);
+              
             }
           this.setData(sample);
         }
@@ -2742,24 +2746,12 @@ app=(function(api,components,daedalus,resources,router){
       setData(data){
         if(((((data)||{}).points)||{}).length>0){
           this.attrs.data=data;
-          const[distance,delta_t,segments]=points2segments(data.points);
           const gradient=points2gradient(data.points);
-          const point_data=points2pace2(data.points);
-          const bounds=L.latLngBounds(data.points.map(p=>[p[0],p[1]]));
           this.attrs.track.setTrackColor(gradient);
+          const bounds=L.latLngBounds(data.points.map(p=>[p[0],p[1]]));
           this.attrs.map.displayMap(bounds);
-          this.attrs.map.displayRoute(segments);
-          this.attrs.linechart.setData(point_data);
           this.attrs.track.setPosition(0,data.points.length,data.points.length);
-          let pace="";
-          if(distance>1e-6){
-            pace=fmtPace((delta_t/1000/distance)*spm_to_mpk);
-          }
-          let time=fmtTime(delta_t);
-          let dist=(distance/1000.0).toFixed(3)+" k";
-          this.attrs.txt_distance.setText(dist);
-          this.attrs.txt_elapsed.setText(time);
-          this.attrs.txt_avg_pace.setText(pace);
+          this.handleUpdateData(0,data.points.length);
         }else{
           console.error("no data");
         }
@@ -2769,7 +2761,8 @@ app=(function(api,components,daedalus,resources,router){
                   end);
         const point_data=points2pace2(this.attrs.data.points,start,end);
         this.attrs.map.displayRoute(segments);
-        this.attrs.linechart.setData(point_data);
+        this.attrs.linechart.setData(point_data.data);
+        this.attrs.track.setTimeRange(point_data.ts,point_data.te);
         let pace="";
         if(distance>1e-6){
           pace=fmtPace((delta_t/1000/distance)*spm_to_mpk);
@@ -3108,6 +3101,20 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.parent.minimizeForecast();
       }
     }
+    class WeatherError extends daedalus.DomElement {
+      constructor(parent){
+        super("div",{className:[style.weatherError,style.weatherErrorHide]},[]);
+        this.attrs.text=this.appendChild(new daedalus.TextElement("error"));
+      }
+      show(text){
+        this.removeClassName(style.weatherErrorHide);
+        this.attrs.text.setText(text);
+      }
+      hide(){
+        console.log("hide");
+        this.addClassName(style.weatherErrorHide);
+      }
+    }
     class WeatherPage extends daedalus.DomElement {
       constructor(){
         super("div",{className:style.app},[]);
@@ -3121,6 +3128,7 @@ app=(function(api,components,daedalus,resources,router){
           });
         this.attrs.header.addElement(new components.HSpacer("1em"));
         this.attrs.dashboard=this.appendChild(new WeatherDashboard(this));
+        this.attrs.error=this.appendChild(new WeatherError());
         this.attrs.list=this.appendChild(new SampleListView());
         this.appendChild(new components.VSpacer("25vh"));
         let periods=[{"number":1,"name":"","startTime":"2020-07-03T09:00:00-04:00",
@@ -3152,9 +3160,13 @@ app=(function(api,components,daedalus,resources,router){
           let postal_code=api.zipGetPostalCode(pt.lat,pt.lon);
           this.attrs.dashboard.setPostalCode(postal_code);
           this.attrs.list.clear();
+          this.attrs.error.hide();
           api.nwsGetEndpoints(pt.lat,pt.lon).then(result=>{
               this.handleGetEndpoints(result.properties);
             }).catch(error=>{
+              let str=`${error.status}:${error.statusText}. Error Fetching Location Info`;
+              
+              this.attrs.error.show(str);
               console.log(error);
             });
         }
@@ -3180,6 +3192,9 @@ app=(function(api,components,daedalus,resources,router){
         api.nwsGetHourlyForecast(info.id,info.x,info.y).then(result=>{
             this.handleGetHourlyForecast(result.properties);
           }).catch(error=>{
+            let str=`${error.status}:${error.statusText}. Error Fetching Forecast`;
+            
+            this.attrs.error.show(str);
             console.log(error);
           });
       }

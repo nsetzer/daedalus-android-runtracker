@@ -7,8 +7,12 @@ import android.content.Intent;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.webkit.SslErrorHandler;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import androidx.webkit.WebViewAssetLoader;
 
 import com.github.nicksetzer.daedalus.runtracker.Log;
 
@@ -16,23 +20,22 @@ public class DaedalusWebViewClient extends WebViewClient {
 
     Activity m_activity;
     boolean m_devel;
+    WebViewAssetLoader m_assetLoader;
 
     public DaedalusWebViewClient(Activity activity, boolean devel) {
         m_activity = activity;
         m_devel = devel;
+
+        m_assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(activity))
+                .addPathHandler("/res/", new WebViewAssetLoader.ResourcesPathHandler(activity))
+                .build();
     }
 
-
     @Override
-    public boolean shouldOverrideUrlLoading(WebView view, String url) {
-
-        /*
-        view.loadUrl(url);
-        */
-
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        m_activity.startActivity(i);
-        return true;
+    public WebResourceResponse shouldInterceptRequest(WebView view,
+                                                      WebResourceRequest request) {
+        return m_assetLoader.shouldInterceptRequest(request.getUrl());
     }
 
     @Override

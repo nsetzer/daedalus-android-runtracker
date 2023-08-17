@@ -6,13 +6,6 @@ let current_match = null;
 
 export class AppRouter extends Router {
 
-    setMatch(match) {
-        current_match = match;
-    }
-}
-
-AppRouter.match = () => {
-    return current_match;
 }
 
 export function navigate(location) {
@@ -32,6 +25,7 @@ export const route_urls = {
     weather_radar: "/weather/radar",
     weather_wildcard: "/weather/:path",
     weather: "/weather",
+    roundtimer: "/roundtimer",
     wildCard: "/:path*",
     landing: "/",
 }

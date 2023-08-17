@@ -1,0 +1,18 @@
+
+
+[] option to loop the sequence
+
+a sequence is a:
+	- type {active, rest}
+	- duration {seconds}
+
+on round is one loop through the sequence
+
+have a configuration of sequences.
+
+
+sounds
+- active start bell
+- active end bell 
+- 30 second interval (mario coin)
+- 10 seconds left    (mario power up)

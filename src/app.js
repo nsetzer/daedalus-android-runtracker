@@ -1,4 +1,7 @@
 
+// TODO: alternative weather source:
+// https://open-meteo.com/en/docs
+// get weather for past two days and up to one week out
 
 from module daedalus import {DomElement, StyleSheet}
 
@@ -151,14 +154,6 @@ const style = {
     svgButton: StyleSheet({
     }),
 
-    hide: StyleSheet({
-        display: "none",
-    }),
-
-    invisible: StyleSheet({
-        visibility: "hidden",
-    }),
-
     headerText: StyleSheet({
         font-size: "1em",
         font-weight: "bold",
@@ -189,6 +184,15 @@ const style = {
         font-family: "roboto",
         font-weight: "900",
         font-size: "5em",
+        margin-top: "-.1em",
+        margin-bottom: "-.2em"
+    }),
+
+    veryLargeText: StyleSheet({
+        //text-shadow: "-2px -2px 2px #FFFFFF",
+        font-family: "roboto",
+        font-weight: "900",
+        font-size: "8em",
         margin-top: "-.1em",
         margin-bottom: "-.2em"
     }),
@@ -530,6 +534,26 @@ const style = {
         justify-content: "center",
         padding: ".5em",
     }),
+
+    roundTimerPresetRow: StyleSheet({
+        "display": "flex",
+        flex-direction: "row",
+        flex-wrap: "wrap",
+    }),
+    roundTimerConfigureRow: StyleSheet({
+        "display": "flex",
+        flex-direction: "row",
+        justify-content: "space-between",
+        width: "100%",
+    }),
+
+    hide: StyleSheet({
+        display: "none",
+    }),
+
+    invisible: StyleSheet({
+        visibility: "hidden",
+    }),
 }
 
 function pad(n, width, z) {
@@ -690,7 +714,10 @@ class TrackerPage extends daedalus.DomElement {
             router.navigate(router.routes.weather({path:''}))
         })
         this.attrs.header.addElement(new components.HSpacer("1em"));
-
+        this.attrs.header.addAction(resources.svg.clock, ()=>{
+            router.navigate(router.routes.roundtimer())
+        })
+        this.attrs.header.addElement(new components.HSpacer("1em"));
         //this.attrs.txt_samples = this.attrs.header.addElement(new Text("0/0", style.headerText));
 
         //this.attrs.txt_pos = this.appendChild(new Text("0.00/0.00", style.smallText));
@@ -1269,6 +1296,7 @@ class TrackBarText extends DomElement {
         this.attrs.text.setText(text)
     }
 }
+
 class TrackBar extends DomElement {
     constructor(callback) {
         super("div", {className: style.trackBar}, [])
@@ -2224,7 +2252,6 @@ class NwsForecastHourItem extends daedalus.DomElement {
         //row.appendChild(new daedalus.DomElement("div", {}, [new daedalus.TextElement(`${item.windSpeed}`)]))
 
     }
-
 }
 
 class NwsForecastDayItem extends daedalus.DomElement {
@@ -2263,7 +2290,6 @@ class NwsForecastDayItem extends daedalus.DomElement {
         })
 
     }
-
 }
 
 class SampleListView extends daedalus.DomElement {
@@ -2339,7 +2365,6 @@ class WeatherDashboard extends daedalus.DomElement {
     }
 }
 
-
 class WeatherError extends daedalus.DomElement {
     constructor(parent) {
         super("div", {className: [style.weatherError, style.weatherErrorHide]}, [])
@@ -2356,6 +2381,7 @@ class WeatherError extends daedalus.DomElement {
         this.addClassName(style.weatherErrorHide)
     }
 }
+
 class WeatherPage extends daedalus.DomElement {
 
     constructor() {
@@ -2750,6 +2776,296 @@ class WeatherRadarPage extends daedalus.DomElement {
     }
 }
 
+class DurationInputElement extends daedalus.DomElement {
+
+    constructor() {
+        super("input", {"type": "number"}, [])
+    }
+
+    setValue(value) {
+        this.getDomNode().value = value
+    }
+
+    getValue(value) {
+        return +this.getDomNode().value
+    }
+}
+
+const sound_cache = {}
+function playSound(url) {
+    if (sound_cache[url] === undefined) {
+        sound_cache[url] = new Audio(url)
+    }
+
+    sound_cache[url].play()
+}
+
+class RadioGroup extends daedalus.DomElement {
+
+    constructor(name, items, initial=0) {
+        super("form", {}, [])
+
+        this.buttons = []
+
+        items.forEach((item, index) => {
+            const tmp = new daedalus.DomElement(
+                "input", {
+                    "type": "radio",
+                    'name': name,
+                    value: index,
+                    checked: index==initial
+                }, [])
+
+            this.appendChild(new daedalus.DomElement(
+                "label", {"for": tmp.props.id}, [
+                tmp,
+                new daedalus.TextElement(item)
+            ]))
+
+            this.buttons.push(tmp)
+
+        })
+
+    }
+
+    onChange(event) {
+        let index = event.target.value
+    }
+
+    getSelectedIndex() {
+
+        for (let i=0; i<this.buttons.length; i++) {
+            if (this.buttons[i].getDomNode().checked) {
+                return i
+            }
+        }
+
+        return 0
+    }
+}
+
+class RoundTimerPage extends daedalus.DomElement {
+
+    constructor() {
+        super("div", {className: [style.app, style.flex_spread]}, [])
+
+        this.attrs.header = this.appendChild(new NavHeader())
+        this.attrs.header.addAction(resources.svg.back, ()=>{
+            router.navigate(router.routes.landing())
+        })
+
+        this.attrs.presetRow = this.appendChild(new Div(style.roundTimerPresetRow))
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("2:00/0:10", () => {this.handlePreset(0)}))
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("2:00/0:30", () => {this.handlePreset(1)}))
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("3:00/0:00", () => {this.handlePreset(2)}))
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("3:00/0:30", () => {this.handlePreset(3)}))
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("3:00/0:60", () => {this.handlePreset(4)}))
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("5:00/0:60", () => {this.handlePreset(5)}))
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("10:00/0:60", () => {this.handlePreset(6)}))
+
+        this.attrs.presetRow2 = this.appendChild(new Div(style.paceCol))
+
+        this.attrs.presetRow3 = this.appendChild(new Div(style.roundTimerPresetRow))
+        this.attrs.presetRow3.appendChild(new Text("Audible Interval:", style.titleText));
+        this.attrs.grp_interval = this.attrs.presetRow3.appendChild(new RadioGroup("grp1", ["Disabled", "0:30", "1:00"], 1))
+
+        this.attrs.configRow = this.appendChild(new Div(style.roundTimerConfigureRow))
+
+        this.attrs.roundRow = this.attrs.configRow.appendChild(new DomElement())
+        this.attrs.roundRow = this.attrs.configRow.appendChild(new Div(style.paceCol))
+        this.attrs.roundRow.appendChild(new Text("Round Duration:", style.titleText));
+        this.attrs.input_roundTime = this.attrs.roundRow.appendChild(new DurationInputElement());
+        this.attrs.roundRow = this.attrs.configRow.appendChild(new DomElement())
+        this.attrs.roundRow = this.attrs.configRow.appendChild(new Div(style.paceCol))
+        this.attrs.roundRow.appendChild(new Text("Rest Duration:", style.titleText));
+        this.attrs.input_restTime = this.attrs.roundRow.appendChild(new DurationInputElement());
+        this.attrs.roundRow = this.attrs.configRow.appendChild(new DomElement())
+
+        this.attrs.modeRow = this.appendChild(new Div(style.paceCol))
+        this.attrs.txt_mode = this.attrs.modeRow.appendChild(new Text("Waiting", style.smallText));
+
+        this.attrs.roundRow = this.appendChild(new Div(style.paceCol))
+        this.attrs.roundRow.appendChild(new Text("Round:", style.titleText));
+        this.attrs.txt_round = this.attrs.roundRow.appendChild(new Text("-", style.largeText));
+
+        this.attrs.timeRow = this.appendChild(new Div(style.paceCol))
+        this.attrs.timeRow.appendChild(new Text("Time:", style.titleText));
+        this.attrs.txt_time = this.attrs.timeRow.appendChild(new Text("0:00", style.veryLargeText));
+
+        this.appendChild(new DomElement())
+        this.appendChild(new DomElement())
+        this.appendChild(new DomElement())
+        this.appendChild(new DomElement("div", {style: {"height": "100px"}}))
+
+        this.attrs.dashboard = this.appendChild(new DomElement("div", {className: style.appButtons}))
+
+        let row = this.attrs.dashboard
+
+        this.attrs.btn_stop = row.appendChild(new SvgButtonElement(svg.button_stop, () => {
+
+            this.stopTimer()
+        }));
+
+        this.attrs.btn_play = row.appendChild(new SvgButtonElement(svg.button_play, () => {
+            this.startTimer()
+
+        }));
+
+    }
+
+    elementMounted() {
+        this.handlePreset(1)
+
+        this.attrs.btn_stop.addClassName(style.hide)
+        this.attrs.dashboard.addClassName(style.flex_center)
+    }
+
+    handlePreset(index) {
+        const presets = [
+            {round: 120, rest: 10}
+            {round: 120, rest: 30}
+            {round: 180, rest:  0}
+            {round: 180, rest: 30}
+            {round: 180, rest: 60}
+            {round: 300, rest: 60}
+            {round: 600, rest: 60}
+        ]
+
+        const preset =  presets[index]
+
+        this.attrs.input_roundTime.setValue(preset.round)
+        this.attrs.input_restTime.setValue(preset.rest)
+
+
+    }
+
+    stopTimer() {
+
+        if (daedalus.platform.isAndroid && !!Client) {
+            Client.lockDisplay(false);
+        }
+
+        this.attrs.txt_mode.setText("Waiting")
+
+        this.attrs.presetRow.removeClassName(style.hide)
+        this.attrs.presetRow2.removeClassName(style.hide)
+        this.attrs.presetRow3.removeClassName(style.hide)
+        this.attrs.configRow.removeClassName(style.hide)
+        this.attrs.btn_stop.addClassName(style.hide)
+        this.attrs.btn_play.removeClassName(style.hide)
+
+        if (this.attrs.timer_handle != null) {
+            clearInterval(this.attrs.timer_handle)
+            this.attrs.timer_handle = null
+        }
+
+        this.attrs.txt_round.setText("-")
+        this.attrs.txt_time.setText("0:00")
+    }
+
+    startTimer() {
+        if (daedalus.platform.isAndroid && !!Client) {
+            Client.lockDisplay(true);
+        }
+
+        this.attrs.presetRow.addClassName(style.hide)
+        this.attrs.presetRow2.addClassName(style.hide)
+        this.attrs.presetRow3.addClassName(style.hide)
+        this.attrs.configRow.addClassName(style.hide)
+        this.attrs.btn_stop.removeClassName(style.hide)
+        this.attrs.btn_play.addClassName(style.hide)
+
+        this.attrs.timer_mode = 0
+        this.attrs.timer_config = [
+            3000,
+            this.attrs.input_roundTime.getValue() * 1000,
+            this.attrs.input_restTime.getValue() * 1000,
+        ]
+        this.attrs.timer_round_counter = 1;
+        this.attrs.timer_start = new Date().getTime();
+        this.attrs.timer_duration = 3000
+        this.attrs.timer_interval = [0, 30, 60][this.attrs.grp_interval.getSelectedIndex()]
+        this.attrs.timer_handle = setInterval(this.handleTimeout.bind(this), 100)
+        this.attrs.timer_last_sound = -1
+
+        this.attrs.txt_round.setText(this.attrs.timer_round_counter)
+        this.attrs.txt_time.setText(fmtTime(this.attrs.timer_duration-1))
+
+        this.attrs.txt_mode.setText("Get Ready!")
+
+        playSound(resources.effects.snd_rest_3s)
+    }
+
+    handleTimeout() {
+
+        const now = new Date().getTime();
+        const elapsedms = now - this.attrs.timer_start
+        const displayms = this.attrs.timer_duration - elapsedms
+
+        if (displayms < 0) {
+            this.attrs.txt_time.setText(fmtTime(0))
+
+            if (this.attrs.timer_mode == 0) {
+                this.attrs.timer_mode = 1
+                this.attrs.txt_mode.setText("Active")
+                playSound(resources.effects.snd_round_start)
+            } else if (this.attrs.timer_mode == 1) {
+
+                if (this.attrs.timer_config[2] == 0) {
+                    // no rest configured, dont change mode
+                    playSound(resources.effects.snd_round_start)
+                } else {
+                    playSound(resources.effects.snd_round_end)
+                    this.attrs.timer_mode = 2
+                    this.attrs.txt_mode.setText("Rest")
+                }
+
+            } else if (this.attrs.timer_mode == 2) {
+                this.attrs.timer_mode = 1
+                this.attrs.txt_mode.setText("Active")
+                this.attrs.timer_round_counter += 1
+                playSound(resources.effects.snd_round_start)
+            }
+
+            this.attrs.timer_last_sound = -1
+            this.attrs.timer_start = new Date().getTime();
+            this.attrs.timer_duration = this.attrs.timer_config[this.attrs.timer_mode]
+
+            this.attrs.txt_round.setText(this.attrs.timer_round_counter)
+            this.attrs.txt_time.setText(fmtTime(this.attrs.timer_duration-1))
+
+        } else {
+            this.attrs.txt_time.setText(fmtTime(displayms))
+
+            const t = Math.floor(displayms/1000)
+
+            if (t !== this.attrs.timer_last_sound) {
+                // play a sound on a 30 or 60 second interval
+                const v = this.attrs.timer_interval
+                if (this.attrs.timer_mode == 1 && t > 1 && v>0 && t%v==0 ) {
+                    playSound(resources.effects.snd_round_30s)
+                    this.attrs.timer_last_sound = t;
+                }
+
+                // play a sound with 10 seconds remaining
+                if (this.attrs.timer_mode == 1 && t==10) {
+                    playSound(resources.effects.snd_round_10s)
+                    this.attrs.timer_last_sound = t;
+                }
+
+                // play a sound with 3 seconds before the round
+                if (this.attrs.timer_mode == 2 && t==3) {
+                    playSound(resources.effects.snd_rest_3s)
+                    this.attrs.timer_last_sound = t;
+                }
+            }
+        }
+
+
+
+    }
+}
+
 export class App extends daedalus.DomElement {
 
     constructor() {
@@ -2767,9 +3083,12 @@ export class App extends daedalus.DomElement {
 
         this.attrs.router = this.buildRouter(this, this.attrs.container)
 
-        this.handleLocationChanged()
 
-        this.connect(history.locationChanged, this.handleLocationChanged.bind(this))
+        window.addEventListener("locationChangedEvent", (event)=>{
+            this.handleLocationChanged(event.detail.path)
+        })
+
+        this.handleLocationChanged(window.daedalus_location)
     }
 
     buildRouter(container) {
@@ -2786,6 +3105,7 @@ export class App extends daedalus.DomElement {
         rt.addRoute(u.weather_radar,        (cbk)=>{this.handleRoute(cbk, WeatherRadarPage)});
         rt.addRoute(u.weather_wildcard,     (cbk)=>{this.handleRoute(cbk, WeatherPage)});
         rt.addRoute(u.weather,              (cbk)=>{this.handleRoute(cbk, WeatherPage)});
+        rt.addRoute(u.roundtimer,           (cbk)=>{this.handleRoute(cbk, RoundTimerPage)});
         //rt.addRoute(u.wildCard, (cbk)=>{this.handleRoute(cbk, TrackerPage)});
         rt.setDefaultRoute(     (cbk)=>{
             this.handleRoute(cbk, TrackerPage)
@@ -2794,9 +3114,8 @@ export class App extends daedalus.DomElement {
         return rt
     }
 
-    handleLocationChanged() {
-
-        this.attrs.router.handleLocationChanged(window.location.pathname)
+    handleLocationChanged(pathname) {
+        this.attrs.router.handleLocationChanged(pathname)
     }
 
     handleRoute(fn, page) {

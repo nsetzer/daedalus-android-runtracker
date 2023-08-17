@@ -9,7 +9,7 @@ api.requests=(function(){
       return fetch(url,parameters).then((response)=>{
           return response.text();
         });
-    }
+    };
     function get_json(url,parameters){
       if(parameters===undefined){
         parameters={};
@@ -21,7 +21,7 @@ api.requests=(function(){
           }
           return response.json();
         });
-    }
+    };
     function post_json(url,payload,parameters){
       if(parameters===undefined){
         parameters={};
@@ -35,7 +35,7 @@ api.requests=(function(){
       return fetch(url,parameters).then((response)=>{
           return response.json();
         });
-    }
+    };
     function put_json(url,payload,parameters){
       if(parameters===undefined){
         parameters={};
@@ -49,8 +49,9 @@ api.requests=(function(){
       return fetch(url,parameters).then((response)=>{
           return response.json();
         });
-    }
-    return{get_json,get_text,post_json,put_json};
+    };
+    return{'get_json':get_json,'get_text':get_text,'post_json':post_json,'put_json':put_json};
+    
   })();
 daedalus=(function(){
     "use strict";
@@ -58,8 +59,6 @@ daedalus=(function(){
     const build_platform="android";
     const[StyleSheet,getStyleSheet,parseParameters,util]=(function(){
         function array_move(arr,p1,p2){
-          let s1=p1;
-          let s2=p2;
           if(p1<0){
             p1=0;
           }
@@ -77,54 +76,80 @@ daedalus=(function(){
           }
           arr.splice(p2,0,arr.splice(p1,1)[0]);
           return;
-        }
+        };
         function randomFloat(min,max){
           return Math.random()*(max-min)+min;
-        }
+        };
+        /**
+         * Returns a random integer between min (inclusive) and max (inclusive).
+         * The value is no lower than min (or the next integer greater than min
+         * if min isn't an integer) and no greater than max (or the next integer
+         * lower than max if max isn't an integer).
+         * Using Math.round() will give you a non-uniform distribution!
+         */
+
         function randomInt(min,max){
-          min=Math.ceil(min);
-          max=Math.floor(max);
-          return Math.floor(Math.random()*(max-min+1))+min;
-        }
+          let _rnd=Math.random();
+          let _min=Math.ceil(min);
+          let _max=Math.floor(max);
+          return Math.floor(_rnd*(_max-_min+1))+_min;
+        };
         function object2style_helper(prefix,obj){
           const items=Object.keys(obj).map(key=>{
-              const type=typeof(obj[key]);
+              const val=obj[key];
+              const type=typeof(val);
               if(type==="object"){
-                return object2style_helper(prefix+key+"-",obj[key]);
+                return object2style_helper(prefix+key+"-",val);
               }else{
-                return[prefix+key+": "+obj[key]];
+                return[prefix+key+": "+val];
               }
             });
-          return[].concat.apply([],items);
-        }
+          let out=[];
+          for(let i=0;i<items.length;i++)
+          {
+            out.concat(items[i]);
+          }
+          ;
+          return out;
+        };
         function object2style(obj){
           const arr=object2style_helper("",obj);
-          return[].concat.apply([],arr).join(';');
-        }
+          return[].concat(arr).join(';');
+        };
         function serializeParameters(obj){
           if(Object.keys(obj).length==0){
             return"";
           }
-          const strings=Object.keys(obj).reduce(function(a,k){
+          const strings=Object.keys(obj).reduce((a,k)=>{
               if(obj[k]===null||obj[k]===undefined){
 
               }else if(Array.isArray(obj[k])){
                 for(let i=0;i<obj[k].length;i++)
-                  {
-                    a.push(encodeURIComponent(k)+'='+encodeURIComponent(obj[k][i]));
-                    
-                  }
+                {
+                  a.push(encodeURIComponent(k)+'='+encodeURIComponent(obj[k][i]));
+                  
+                }
+                ;
               }else{
                 a.push(encodeURIComponent(k)+'='+encodeURIComponent(obj[k]));
               }
               return a;
             },[]);
           return'?'+strings.join('&');
-        }
+        };
+        /**
+         * Parse URL Parameters from a string or the current window location
+         *
+         * return an object mapping of string to list of strings
+         */
+
         function parseParameters(text=undefined){
-          let match,search=/([^&=]+)=?([^&]*)/g,decode=s=>decodeURIComponent(s.replace(
-                          /\+/g," ")),query=(text===undefined)?window.location.search.substring(
-                      1):text;
+          let match;
+          let search=/([^&=]+)=?([^&]*)/g;
+          let decode=s=>decodeURIComponent(s.replace(/\+/g," "));
+          let search_term=(new URL(window.location.protocol+"//"+window.location.hostname+window.daedalus_location)).search;
+          
+          let query=(text===undefined)?search_term.substring(1):text;
           let urlParams={};
           while(match=search.exec(query)){
             let value=decode(match[2]);
@@ -136,35 +161,36 @@ daedalus=(function(){
             }
           }
           return urlParams;
-        }
+        };
         function isFunction(x){
           return(x instanceof Function);
-        }
+        };
         function joinpath(...parts){
           let str="";
           for(let i=0;i<parts.length;i++)
-            {
-              if(!str.endsWith("/")&&!parts[i].startsWith("/")){
-                str+="/";
-              }
-              str+=parts[i];
+          {
+            if(!str.endsWith("/")&&!parts[i].startsWith("/")){
+              str+="/";
             }
+            str+=parts[i];
+          }
+          ;
           return str;
-        }
+        };
         function splitpath(path){
           const parts=path.split('/');
           if(parts.length>0&&parts[parts.length-1].length===0){
             parts.pop();
           }
           return parts;
-        }
+        };
         function dirname(path){
           const parts=path.split('/');
           while(parts.length>0&&parts[parts.length-1].length===0){
             parts.pop();
           }
           return joinpath(...parts.slice(0,-1));
-        }
+        };
         function splitext(name){
           const index=name.lastIndexOf('.');
           if(index<=0||name[index-1]=='/'){
@@ -172,7 +198,7 @@ daedalus=(function(){
           }else{
             return[name.slice(0,index),name.slice(index)];
           }
-        }
+        };
         let css_sheet=null;
         let selector_names={};
         function generateStyleSheetName(){
@@ -181,13 +207,15 @@ daedalus=(function(){
           do {
             name="css-";
             for(let i=0;i<6;i++)
-              {
-                let c=chars[randomInt(0,chars.length-1)];
-                name+=c;
-              }
-          } while (selector_names[name]!==undefined)
+            {
+              let c=chars[randomInt(0,chars.length-1)];
+              name+=c;
+            }
+            ;
+            ;
+          } while (name in selector_names)
           return name;
-        }
+        };
         function shuffle(array){
           let currentIndex=array.length,temporaryValue,randomIndex;
           while(0!==currentIndex){
@@ -198,7 +226,30 @@ daedalus=(function(){
             array[randomIndex]=temporaryValue;
           }
           return array;
-        }
+        };
+        /**
+        this function has two forms based on the number of arguments
+        the style is always the final parameter
+        
+        The single argument form builds a new style sheet and automatically
+        generates a class name.
+        
+        StyleSheet(style)
+        StyleSheet(selector, style)
+        
+        The two argument form builds a style sheet but allows the user to specifiy
+        the selector. Use to apply psuedo class selectors to existing styles.
+        
+        usage:
+            This example sets the color of an element to red, and changes the
+            color to blue when the element is hovered over
+        
+            style1 = StyleSheet({color: red})
+            style1_hover = StyleSheet(`.${style1}:hover`, {color: blue})
+            element.updateProps({'className': style1})
+        
+        */
+
         function StyleSheet(...args){
           let name;
           let style;
@@ -219,59 +270,55 @@ daedalus=(function(){
           }
           const text=object2style(style);
           selector_names[name]=style;
-          if(!(css_sheet.sheet||{}).insertRule){
-            (css_sheet.styleSheet||css_sheet.sheet).addRule(selector,text);
-          }else{
-            css_sheet.sheet.insertRule(selector+"{"+text+"}",css_sheet.sheet.rules.length);
-            
-          }
+          css_sheet.sheet.insertRule(selector+" {"+text+"}",css_sheet.sheet.rules.length);
+          
           return name;
-        }
+        };
         function getStyleSheet(name){
           return selector_names[name];
-        }
+        };
         function perf_timer(){
           return performance.now();
-        }
-        const util={array_move,randomInt,randomFloat,object2style,serializeParameters,
-                  parseParameters,isFunction,joinpath,splitpath,dirname,splitext,shuffle,
-                  perf_timer};
+        };
+        const util={'array_move':array_move,'randomInt':randomInt,'randomFloat':randomFloat,
+                  'object2style':object2style,'serializeParameters':serializeParameters,'parseParameters':parseParameters,
+                  'isFunction':isFunction,'joinpath':joinpath,'splitpath':splitpath,'dirname':dirname,
+                  'splitext':splitext,'shuffle':shuffle,'perf_timer':perf_timer};
         return[StyleSheet,getStyleSheet,parseParameters,util];
       })();
-    const[ButtonElement,DomElement,DraggableList,HeaderElement,LinkElement,ListElement,
-          ListItemElement,NumberInputElement,Signal,TextElement,TextInputElement]=(function(
+    const[ButtonElement,DomElement,DraggableList,DraggableListItem,HeaderElement,
+          LinkElement,ListElement,ListItemElement,TextElement,TextInputElement]=(function(
             ){
-        let sigal_counter=0;
-        function Signal(element,name){
-          const event_name="onSignal_"+(sigal_counter++)+"_"+name;
-          const signal={};
-          signal._event_name=event_name;
-          signal._slots=[];
-          signal.emit=(obj=null)=>{
-            signal._slots.map(item=>{
-                requestIdleCallback(()=>{
-                    item.callback(obj);
-                  });
-              });
-          };
-          console.log("signal create:"+event_name);
-          if(!!element){
-            element.signals.push(signal);
-          }
-          return signal;
-        }
         let element_uid=0;
         function generateElementId(){
           const chars='abcdefghijklmnopqrstuvwxyz';
           let name;
           name="-";
           for(let i=0;i<6;i++)
-            {
-              let c=chars[util.randomInt(0,chars.length-1)];
-              name+=c;
-            }
+          {
+            let c=chars[util.randomInt(0,chars.length-1)];
+            name+=c;
+          }
+          ;
+          ;
           return name+"-"+(element_uid++);
-        }
+        };
+        /**
+            a minimal element is:
+                - type
+                - props
+                - children
+            other reserved keys include:
+                - state     // deprecated
+                - attrs     // deprecated, private keys now use a prefix _$
+                            // a seperate namespace for user defined keys is
+                            // no longer required
+                - on*       : event callbacks
+            daedalus private keys begin with '_$'
+                - _$fiber
+                - _$dirty
+        */
+
         class DomElement{
           constructor(type="div",props=undefined,children=undefined){
             if(type===undefined){
@@ -279,35 +326,25 @@ daedalus=(function(){
               
             }
             this.type=type;
-            if(props===undefined){
-              this.props={};
-            }else{
-              this.props=props;
-            }
+            this.props=props??{};
+            this.children=children??[];
             if(this.props.id===undefined){
               this.props.id=this.constructor.name+generateElementId();
             }
-            if(children===undefined){
-              this.children=[];
-            }else{
-              this.children=children;
-            }
-            this.signals=[];
-            this.slots=[];
-            this.dirty=true;
+            this._$dirty=true;
             this.state={};
             this.attrs={};
-            this._fiber=null;
+            this._$fiber=null;
             Object.getOwnPropertyNames(this.__proto__).filter(key=>key.startsWith(
                               "on")).forEach(key=>{
                 this.props[key]=this[key].bind(this);
               });
           }
-          _update(element){
+          _update(element,debug=false){
 
           }
-          update(){
-            this._update(this);
+          update(debug=false){
+            this._update(this,debug);
           }
           updateState(state,doUpdate){
             const newState={...this.state,...state};
@@ -331,7 +368,8 @@ daedalus=(function(){
           }
           appendChild(childElement){
             if(!childElement||!childElement.type){
-              throw"invalid child";
+              console.log({'message':"invalid child",'child':childElement});
+              throw"appendChild Failed: child is null or type not set";
             }
             if(typeof this.children==="string"){
               this.children=[this.children];
@@ -362,17 +400,19 @@ daedalus=(function(){
             this.update();
             return childElement;
           }
-          removeChild(childElement){
-            if(!childElement||!childElement.type){
-              throw"invalid child";
-            }
-            const index=this.children.indexOf(childElement);
+          removeChildAtIndex(index){
             if(index>=0){
               this.children.splice(index,1);
               this.update();
             }else{
               console.error("child not in list");
             }
+          }
+          removeChild(childElement){
+            if(!childElement||!childElement.type){
+              throw"invalid child";
+            }
+            this.removeChildAtIndex(this.children.indexOf(childElement));
           }
           removeChildren(){
             this.children.splice(0,this.children.length);
@@ -387,51 +427,51 @@ daedalus=(function(){
           }
           addClassName(cls){
             let props;
-            if(!this.props.className){
-              props={className:cls};
+            if(this.props.className==undefined||this.props.className==null){
+              props={'className':cls};
             }else if(Array.isArray(this.props.className)){
-              props={className:[cls,...this.props.className]};
+              if(this.hasClassName(cls)){
+                return;
+              }
+              props={'className':[cls,...this.props.className]};
             }else{
-              props={className:[cls,this.props.className]};
+              if(this.props.className===cls){
+                return;
+              }
+              props={'className':[cls,this.props.className]};
             }
             this.updateProps(props);
           }
           removeClassName(cls){
             let props;
             if(Array.isArray(this.props.className)){
-              props={className:this.props.className.filter(x=>x!==cls)};
+              props={'className':this.props.className.filter(x=>(x!==cls))};
               if(props.className.length===this.props.className.length){
                 return;
               }
               this.updateProps(props);
             }else if(this.props.className===cls){
-              props={className:null};
+              props={'className':null};
               this.updateProps(props);
             }
           }
           hasClassName(cls){
             let props;
             if(Array.isArray(this.props.className)){
-              return this.props.className.filter(x=>x===cls).length===1;
+              return this.props.className.filter(x=>x===cls).length>0;
             }
             return this.props.className===cls;
           }
-          connect(signal,callback){
-            console.log("signal connect:"+signal._event_name,callback);
-            const ref={element:this,signal:signal,callback:callback};
-            signal._slots.push(ref);
-            this.slots.push(ref);
-          }
-          disconnect(signal){
-            console.log("signal disconnect:"+signal._event_name);
-          }
           getDomNode(){
-            return this._fiber&&this._fiber.dom;
+            if(this._$fiber==null){
+              console.error(this);
+            }
+            return this._$fiber&&this._$fiber.dom;
           }
           isMounted(){
-            return this._fiber!==null;
+            return this._$fiber!==null;
           }
-        }
+        };
         class TextElement extends DomElement {
           constructor(text,props={}){
             super("TEXT_ELEMENT",{'nodeValue':text,...props},[]);
@@ -443,12 +483,12 @@ daedalus=(function(){
           getText(){
             return this.props.nodeValue;
           }
-        }
+        };
         class LinkElement extends DomElement {
           constructor(text,url){
-            super("div",{className:LinkElement.style.link,title:url},[new TextElement(
+            super("div",{'className':LinkElement.style.link,'title':url},[new TextElement(
                                   text)]);
-            this.state={url};
+            this.state={'url':url};
           }
           onClick(){
             if(this.state.url.startsWith('http')){
@@ -457,18 +497,18 @@ daedalus=(function(){
               history.pushState({},"",this.state.url);
             }
           }
-        }
-        LinkElement.style={link:'dcs-8415668d-0'};
+        };
+        LinkElement.style={'link':'dcs-2533d68a-0'};
         class ListElement extends DomElement {
           constructor(){
             super("ul",{},[]);
           }
-        }
+        };
         class ListItemElement extends DomElement {
           constructor(item){
             super("li",{},[item]);
           }
-        }
+        };
         class HeaderElement extends DomElement {
           constructor(text=""){
             super("h1",{},[]);
@@ -477,7 +517,7 @@ daedalus=(function(){
           setText(text){
             this.node.setText(text);
           }
-        }
+        };
         class ButtonElement extends DomElement {
           constructor(text,onClick){
             super("button",{'onClick':onClick},[new TextElement(text)]);
@@ -488,60 +528,32 @@ daedalus=(function(){
           getText(){
             return this.children[0].props.nodeValue;
           }
-        }
+        };
         class TextInputElement extends DomElement {
           constructor(text,_,submit_callback){
-            super("input",{value:text,type:"text"},[]);
-            this.textChanged=Signal(this,'textChanged');
-            this.attrs={submit_callback};
+            super("input",{'value':text,'type':"text"},[]);
+            this.attrs={'submit_callback':submit_callback};
           }
           setText(text){
-            this.updateProps({value:text});
-            this.textChanged.emit(this.props);
+            this.getDomNode().value=text;
           }
           getText(){
-            return this.props.value;
+            return this.getDomNode().value;
           }
           onChange(event){
-            this.updateProps({value:event.target.value},false);
-            this.textChanged.emit(this.props);
+
           }
           onPaste(event){
-            this.updateProps({value:event.target.value},false);
-            this.textChanged.emit(this.props);
+
           }
           onKeyUp(event){
-            this.updateProps({value:event.target.value},false);
-            this.textChanged.emit(this.props);
             if(event.key=="Enter"){
               if(this.attrs.submit_callback){
-                this.attrs.submit_callback(this.props.value);
+                this.attrs.submit_callback(this.getText());
               }
             }
           }
-        }
-        class NumberInputElement extends DomElement {
-          constructor(value){
-            super("input",{value:value,type:"number"},[]);
-            this.valueChanged=Signal(this,'valueChanged');
-          }
-          onChange(event){
-            this.updateProps({value:parseInt(event.target.value,10)},false);
-            this.valueChanged.emit(this.props);
-          }
-          onPaste(event){
-            this.updateProps({value:parseInt(event.target.value,10)},false);
-            this.valueChanged.emit(this.props);
-          }
-          onKeyUp(event){
-            this.updateProps({value:parseInt(event.target.value,10)},false);
-            this.valueChanged.emit(this.props);
-          }
-          onInput(event){
-            this.updateProps({value:parseInt(event.target.value,10)},false);
-            this.valueChanged.emit(this.props);
-          }
-        }
+        };
         function swap(nodeA,nodeB){
           if(!nodeA||!nodeB){
             return;
@@ -550,23 +562,32 @@ daedalus=(function(){
           const siblingA=nodeA.nextSibling===nodeB?nodeA:nodeA.nextSibling;
           nodeB.parentNode.insertBefore(nodeA,nodeB);
           parentA.insertBefore(nodeB,siblingA);
-        }
+        };
         function isAbove(nodeA,nodeB){
           if(!nodeA||!nodeB){
             return false;
           }
           const rectA=nodeA.getBoundingClientRect();
           const rectB=nodeB.getBoundingClientRect();
-          return(rectA.top+rectA.height/2<rectB.top+rectB.height/2);
-        }
+          const a=rectA.top+rectA.height/2;
+          const b=rectB.top+rectB.height/2;
+          return a<b;
+        };
         function childIndex(node){
+          if(node===null){
+            return 0;
+          }
           let count=0;
           while((node=node.previousSibling)!=null){
             count++;
           }
           return count;
-        }
-        const placeholder='dcs-8415668d-1';
+        };
+        const placeholder='dcs-2533d68a-1';
+        /**
+         * Reference implementation for a Draggable Item
+         */
+
         class DraggableListItem extends DomElement {
           constructor(){
             super("div",{},[]);
@@ -578,11 +599,11 @@ daedalus=(function(){
             this.attrs.parent.handleChildDragMove(this,event);
           }
           onTouchEnd(event){
-            this.attrs.parent.handleChildDragEnd(this,{target:this.getDomNode()});
+            this.attrs.parent.handleChildDragEnd(this,{'target':this.getDomNode()});
             
           }
           onTouchCancel(event){
-            this.attrs.parent.handleChildDragEnd(this,{target:this.getDomNode()});
+            this.attrs.parent.handleChildDragEnd(this,{'target':this.getDomNode()});
             
           }
           onMouseDown(event){
@@ -597,46 +618,67 @@ daedalus=(function(){
           onMouseUp(event){
             this.attrs.parent.handleChildDragEnd(this,event);
           }
-        }
+        };
+        /**
+         * A div where child elements can be dragged with a mouse or touch event
+         *
+         */
+
         class DraggableList extends DomElement {
           constructor(){
             super("div",{},[]);
-            this.attrs={x:null,y:null,placeholder:null,placeholderClassName:placeholder,
-                          draggingEle:null,isDraggingStarted:false,indexStart:-1,lockX:true};
-            
+            this.attrs={'x':null,'y':null,'placeholder':null,'placeholderClassName':placeholder,
+                          'draggingEle':null,'isDraggingStarted':false,'indexStart':-1,'lockX':true,
+                          'swipeScrollTimer':null};
           }
           setPlaceholderClassName(className){
             this.attrs.placeholderClassName=className;
           }
+          /**
+               * child: a DomElement that is a child of this element
+               * event: a mouse or touch event
+               */
+
           handleChildDragBegin(child,event){
-            event.preventDefault();
             if(!!this.attrs.draggingEle){
+              console.error("running drag cancel because previous did not finish");
+              
               this.handleChildDragCancel();
-              return;
             }
+            let org_event=event;
             let evt=(((event)||{}).touches||((((event)||{}).originalEvent)||{}).touches);
             
             if(evt){
               event=evt[0];
             }
             this.attrs.draggingEle=child.getDomNode();
+            if(!this.attrs.draggingEle){
+              console.error("no element set for drag");
+              return false;
+            }
+            this.attrs.draggingChild=child;
             this.attrs.indexStart=childIndex(this.attrs.draggingEle);
+            if(this.attrs.indexStart<0){
+              console.error("drag begin failed for child");
+              this.attrs.draggingEle=null;
+              this.attrs.indexStart=-1;
+              return false;
+            }
             const rect=this.attrs.draggingEle.getBoundingClientRect();
             this.attrs.x=event.clientX-rect.left;
-            this.attrs.y=event.pageY-rect.top;
+            this.attrs.y=event.pageY+window.scrollY;
+            this.attrs.eventSource=child;
+            return true;
           }
-          handleChildDragMove(child,event){
-            if(!this.attrs.draggingEle||this.attrs.draggingEle!==child.getDomNode(
-                            )){
-              return;
-            }
-            event.preventDefault();
-            let evt=(((event)||{}).touches||((((event)||{}).originalEvent)||{}).touches);
+          handleChildDragMoveImpl(pageX,pageY){
+            const rect=this.attrs.draggingEle.parentNode.getBoundingClientRect();
             
-            if(evt){
-              event=evt[0];
-            }
+            pageY-=rect.top+window.scrollY;
             const draggingRect=this.attrs.draggingEle.getBoundingClientRect();
+            if(this.attrs.indexStart<0){
+              console.error("drag move failed for child");
+              return false;
+            }
             if(!this.attrs.isDraggingStarted){
               this.attrs.isDraggingStarted=true;
               this.attrs.placeholder=document.createElement('div');
@@ -644,65 +686,172 @@ daedalus=(function(){
               
               this.attrs.draggingEle.parentNode.insertBefore(this.attrs.placeholder,
                               this.attrs.draggingEle.nextSibling);
-              this.attrs.placeholder.style.height=`${draggingRect.height}px`;
+              this.attrs.placeholder.style.height=`${this.attrs.draggingEle.clientHeight}px`;
+              
             }
             this.attrs.draggingEle.style.position='absolute';
-            let ypos=event.pageY-this.attrs.y+window.scrollY;
+            let ypos=pageY-(this.attrs.draggingEle.clientHeight/2);
             this.attrs.draggingEle.style.top=`${ypos}px`;
             if(!this.attrs.lockX){
-              this.attrs.draggingEle.style.left=`${event.pageX-this.attrs.x}px`;
+              this.attrs.draggingEle.style.left=`${pageX-this.attrs.x}px`;
             }
             const prevEle=this.attrs.draggingEle.previousElementSibling;
             const nextEle=this.attrs.placeholder.nextElementSibling;
             if(prevEle&&isAbove(this.attrs.draggingEle,prevEle)){
               swap(this.attrs.placeholder,this.attrs.draggingEle);
               swap(this.attrs.placeholder,prevEle);
-              return;
-            }
-            if(nextEle&&isAbove(nextEle,this.attrs.draggingEle)){
+              const a=childIndex(prevEle)-1;
+              const b=childIndex(this.attrs.draggingEle);
+              prevEle._$fiber.element.setIndex(a);
+              this.attrs.draggingEle._$fiber.element.setIndex(b);
+              ;
+              ;
+            }else if(nextEle&&isAbove(nextEle,this.attrs.draggingEle)){
               swap(nextEle,this.attrs.placeholder);
               swap(nextEle,this.attrs.draggingEle);
+              const a=childIndex(nextEle);
+              const b=childIndex(this.attrs.draggingEle);
+              nextEle._$fiber.element.setIndex(a);
+              this.attrs.draggingEle._$fiber.element.setIndex(b);
+              ;
+              ;
+            }
+            return true;
+          }
+          _handleAutoScroll(dy){
+            const rate=15;
+            const step=rate*dy;
+            let _y=window.pageYOffset;
+            window.scrollBy(0,step);
+            if(_y!=window.pageYOffset){
+              let total_step=window.pageYOffset-_y;
+              this.attrs.y+=total_step;
+              this.attrs.autoScrollY+=total_step;
+              this.handleChildDragMoveImpl(this.attrs.autoScrollX,this.attrs.autoScrollY);
+              
+              ;
+            }
+          }
+          _handleChildDragAutoScroll(evt){
+            const _rect=this.attrs.draggingEle.parentNode.getBoundingClientRect();
+            
+            let node=this.getDomNode();
+            const lstTop=window.scrollY+_rect.top;
+            let top=window.scrollY+_rect.top;
+            let bot=top+window.innerHeight-lstTop;
+            let y=Math.floor(evt.pageY-node.offsetTop-window.scrollY);
+            let h=this.attrs.draggingEle.clientHeight;
+            if(y<top+h){
+              this.attrs.autoScrollX=Math.floor(evt.pageX);
+              this.attrs.autoScrollY=Math.floor(evt.pageY);
+              if(this.attrs.swipeScrollTimer===null){
+                this.attrs.swipeScrollTimer=setInterval(()=>{
+                    this._handleAutoScroll(-1);
+                  },33);
+              }
+            }else if(y>bot-h*2){
+              this.attrs.autoScrollX=Math.floor(evt.pageX);
+              this.attrs.autoScrollY=Math.floor(evt.pageY);
+              if(this.attrs.swipeScrollTimer===null){
+                this.attrs.swipeScrollTimer=setInterval(()=>{
+                    this._handleAutoScroll(1);
+                  },33);
+              }
+            }else if(this.attrs.swipeScrollTimer!==null){
+              clearInterval(this.attrs.swipeScrollTimer);
+              this.attrs.swipeScrollTimer=null;
+            }
+          }
+          handleChildDragMove(child,event){
+            if(!this.attrs.draggingEle){
+              return false;
+            }
+            if(this.attrs.draggingEle!==child.getDomNode()){
+              return false;
+            }
+            let org_event=event;
+            let evt=(((event)||{}).touches||((((event)||{}).originalEvent)||{}).touches);
+            
+            if(evt){
+              event=evt[0];
+            }
+            this._handleChildDragAutoScroll(event);
+            let x=Math.floor(event.pageX);
+            let y=Math.floor(event.pageY);
+            if(this.attrs._px!==x||this.attrs._py!==y){
+              this.attrs._px=x;
+              this.attrs._py=y;
+              return this.handleChildDragMoveImpl(x,y);
             }
           }
           handleChildDragEnd(child,event){
-            if(!this.attrs.draggingEle||this.attrs.draggingEle!==child.getDomNode(
-                            )){
-              return;
-            }
-            this.handleChildDragCancel();
+            return this.handleChildDragCancel();
           }
-          handleChildDragCancel(){
+          handleChildDragCancel(doUpdate=true){
             this.attrs.placeholder&&this.attrs.placeholder.parentNode.removeChild(
                           this.attrs.placeholder);
-            this.attrs.draggingEle.style.removeProperty('top');
-            this.attrs.draggingEle.style.removeProperty('left');
-            this.attrs.draggingEle.style.removeProperty('position');
             const indexEnd=childIndex(this.attrs.draggingEle);
-            this.updateModel(this.attrs.indexStart,indexEnd);
+            if(this.attrs.indexStart>=0&&this.attrs.indexStart!==indexEnd){
+              this.updateModel(this.attrs.indexStart,indexEnd);
+            }
+            if(this.attrs.draggingEle){
+              this.attrs.draggingEle.style.removeProperty('top');
+              this.attrs.draggingEle.style.removeProperty('left');
+              this.attrs.draggingEle.style.removeProperty('position');
+            }
+            if(this.attrs.swipeScrollTimer!==null){
+              clearInterval(this.attrs.swipeScrollTimer);
+              this.attrs.swipeScrollTimer=null;
+            }
+            const success=this.attrs.draggingEle!==null;
             this.attrs.x=null;
             this.attrs.y=null;
             this.attrs.draggingEle=null;
             this.attrs.isDraggingStarted=false;
+            this.attrs.placeholder=null;
+            this.attrs.indexStart=-1;
+            return success;
           }
           updateModel(indexStart,indexEnd){
             this.children.splice(indexEnd,0,this.children.splice(indexStart,1)[0]);
             
           }
-        }
-        return[ButtonElement,DomElement,DraggableList,HeaderElement,LinkElement,ListElement,
-                  ListItemElement,NumberInputElement,Signal,TextElement,TextInputElement];
-        
+          debugString(){
+            let str="";
+            if(this.attrs.isDraggingStarted){
+              str+=" dragging";
+            }else{
+              str+=" not dragging";
+            }
+            if(this.attrs.draggingEle){
+              str+='elem';
+            }
+            if(this.attrs.x||this.attrs.y){
+              str+=` x:${this.attrs.x}, y:${this.attrs.y}`;
+            }
+            return str;
+          }
+        };
+        return[ButtonElement,DomElement,DraggableList,DraggableListItem,HeaderElement,
+                  LinkElement,ListElement,ListItemElement,TextElement,TextInputElement];
       })();
     const[]=(function(){
-        history.locationChanged=Signal(null,"locationChanged");
-        history.states=[{state:{},title:null,path:window.location.href}];
+        window.daedalus_location="/";
+        function _sendEvent(path){
+          console.log("_sendEvent: "+path);
+          const myEvent=new CustomEvent('locationChangedEvent',{'detail':{'path':path},
+                          'bubbles':true,'cancelable':true,'composed':false});
+          window.daedalus_location=path;
+          window.dispatchEvent(myEvent);
+        };
+        history.states=[{'state':{},'title':null,'path':window.daedalus_location}];
+        
         history.forward_states=[];
         history._pushState=history.pushState;
         history.pushState=(state,title,path)=>{
-          history._pushState(state,title,path);
-          history.locationChanged.emit({path:location.pathname});
+          _sendEvent(path);
           history.forward_states=[];
-          history.states.push({state,title,path});
+          history.states.push({'state':state,'title':title,'path':path});
         };
         history.goBack=()=>{
           if(history.states.length<2){
@@ -711,12 +860,11 @@ daedalus=(function(){
           const state=history.states.pop();
           history.forward_states.splice(0,0,state);
           const new_state=history.states[history.states.length-1];
-          history._pushState(new_state.state,new_state.title,new_state.path);
-          history.locationChanged.emit({path:location.pathname});
+          _sendEvent(new_state.path);
           return true;
         };
         window.addEventListener('popstate',(event)=>{
-            history.locationChanged.emit({path:location.pathname});
+            history.goBack();
           });
         return[];
       })();
@@ -726,75 +874,80 @@ daedalus=(function(){
           const arr=pattern.split('/');
           let tokens=[];
           for(let i=1;i<arr.length;i++)
-            {
-              let part=arr[i];
-              if(part.startsWith(':')){
-                if(part.endsWith('?')){
-                  tokens.push({param:true,name:part.substr(1,part.length-2)});
-                }else if(part.endsWith('+')){
-                  tokens.push({param:true,name:part.substr(1,part.length-2)});
-                }else if(part.endsWith('*')){
-                  tokens.push({param:true,name:part.substr(1,part.length-2)});
-                }else{
-                  tokens.push({param:true,name:part.substr(1)});
-                }
+          {
+            let part=arr[i];
+            if(part.startsWith(':')){
+              if(part.endsWith('?')){
+                tokens.push({'param':true,'name':part.substr(1,part.length-2)});
+              }else if(part.endsWith('+')){
+                tokens.push({'param':true,'name':part.substr(1,part.length-2)});
+              }else if(part.endsWith('*')){
+                tokens.push({'param':true,'name':part.substr(1,part.length-2)});
               }else{
-                tokens.push({param:false,value:part});
+                tokens.push({'param':true,'name':part.substr(1)});
               }
+            }else{
+              tokens.push({'param':false,'value':part});
             }
+          }
+          ;
+          ;
           return(items,query_items)=>{
             let location='';
             for(let i=0;i<tokens.length;i++)
-              {
-                location+='/';
-                if(tokens[i].param){
-                  location+=items[tokens[i].name];
-                }else{
-                  location+=tokens[i].value;
-                }
+            {
+              location+='/';
+              if(tokens[i].param){
+                location+=items[tokens[i].name];
+              }else{
+                location+=tokens[i].value;
               }
+            }
+            ;
             if(!!query_items){
               location+=util.serializeParameters(query_items);
             }
             return location;
           };
-        }
+        };
         function patternToRegexp(pattern,exact=true){
           const arr=pattern.split('/');
           let re="^";
           let tokens=[];
           for(let i=exact?1:0;i<arr.length;i++)
-            {
-              let part=arr[i];
-              if(i==0&&exact===false){
+          {
+            let part=arr[i];
+            if(i==0&&exact===false){
 
-              }else{
-                re+="\\/";
-              }
-              if(part.startsWith(':')){
-                if(part.endsWith('?')){
-                  tokens.push(part.substr(1,part.length-2));
-                  re+="([^\\/]*)";
-                }else if(part.endsWith('+')){
-                  tokens.push(part.substr(1,part.length-2));
-                  re+="?(.+)";
-                }else if(part.endsWith('*')){
-                  tokens.push(part.substr(1,part.length-2));
-                  re+="?(.*)";
-                }else{
-                  tokens.push(part.substr(1));
-                  re+="([^\\/]+)";
-                }
-              }else{
-                re+=part;
-              }
+            }else{
+              re+="\\/";
             }
+            if(part.startsWith(':')){
+              if(part.endsWith('?')){
+                tokens.push(part.substr(1,part.length-2));
+                re+="([^\\/]*)";
+              }else if(part.endsWith('+')){
+                tokens.push(part.substr(1,part.length-2));
+                re+="?(.+)";
+              }else if(part.endsWith('*')){
+                tokens.push(part.substr(1,part.length-2));
+                re+="?(.*)";
+              }else{
+                tokens.push(part.substr(1));
+                re+="([^\\/]+)";
+              }
+            }else{
+              re+=part;
+            }
+          }
+          ;
+          ;
           if(re!=="^\\/"){
             re+="\\/?";
           }
           re+="$";
-          return{re:new RegExp(re,"i"),text:re,tokens};
-        }
+          return{'re':new RegExp(re,"i"),'text':re,'tokens':tokens};
+        };
         function locationMatch(obj,location){
           obj.re.lastIndex=0;
           let arr=location.match(obj.re);
@@ -803,15 +956,31 @@ daedalus=(function(){
           }
           let result={};
           for(let i=1;i<arr.length;i++)
-            {
-              result[obj.tokens[i-1]]=arr[i];
-            }
+          {
+            result[obj.tokens[i-1]]=arr[i];
+          }
+          ;
           return result;
-        }
+        };
         function patternMatch(pattern,location){
           return locationMatch(patternToRegexp(pattern),location);
-        }
+        };
+        /**
+         * A class which controls the child element of another DomElement using
+         * the current location.
+         *
+         * This class is designed to be embeddable. The method handleLocationChanged
+         * should be called by the user whenever the location has been changed.
+         * This class can be used independently of the window location, provided
+         * the user can provide an alternative location.
+         */
+
         class Router{
+          /**
+               * container: a DomElement
+               * default_callback: function(setElementCallback)
+               */
+
           constructor(container,default_callback){
             if(!container){
               throw'invalid container';
@@ -821,17 +990,25 @@ daedalus=(function(){
             this.routes=[];
             this.current_index=-2;
             this.current_location=null;
+            this.match=null;
           }
           handleLocationChanged(location){
+            let auth=this.isAuthenticated();
             let index=0;
             while(index<this.routes.length){
               const item=this.routes[index];
-              const match=locationMatch(item.re,location);
+              if(!auth&&item.auth){
+                index+=1;
+                continue;
+              }
+              const match=locationMatch(item.re,(new URL(window.location.protocol+"//"+window.location.hostname+location)).pathname);
+              
               if(match!==null){
                 let fn=(element)=>this.setElement(index,location,match,element);
                 if(this.doRoute(item,fn,match)){
                   return;
                 }
+                ;
               }
               index+=1;
             }
@@ -839,6 +1016,18 @@ daedalus=(function(){
             this.default_callback(fn);
             return;
           }
+          /**
+               * item: the route object
+               * fn: a callback function which will set the element in the container
+               * match: the location match result
+               *
+               * When a location matches a known route this function is called
+               * the route object contains a callback which should be called
+               * In which case this method returns true. If this route should not
+               * be followed return false
+               *
+               */
+
           doRoute(item,fn,match){
             item.callback(fn,match);
             return true;
@@ -851,7 +1040,7 @@ daedalus=(function(){
               }
               if(this.current_location!==location){
                 this.setMatch(match);
-                element.updateState({match:match});
+                element.updateState({'match':match});
               }
               this.current_index=index;
             }else{
@@ -863,20 +1052,44 @@ daedalus=(function(){
           }
           addRoute(pattern,callback){
             const re=patternToRegexp(pattern);
-            this.routes.push({pattern,callback,re});
+            this.routes.push({'pattern':pattern,'callback':callback,'re':re});
           }
+          /**
+               * set the callback to use for the default route, when no
+               * other defined route matches the current location.
+               *
+               * callback :: function(setElementCallback)
+               *   the callback should be a function which accepts asingle arugment,
+               *   a function that will be used to set an element as a child of the
+               *   container
+               */
+
           setDefaultRoute(callback){
             this.default_callback=callback;
           }
           setMatch(match){
-
+            this.match=match;
           }
-        }
+          clear(){
+            this.container.children=[];
+            this.current_index=-1;
+            this.current_location=null;
+            this.container.update();
+          }
+          isAuthenticated(){
+            return false;
+          }
+        };
+        Router.instance=null;
         class AuthenticatedRouter extends Router {
           constructor(container,route_list,default_callback){
             super(container,route_list,default_callback);
             this.authenticated=false;
           }
+          /**
+               *
+               */
+
           doRoute(item,fn,match){
             let has_auth=this.isAuthenticated();
             if(item.auth===true&&item.noauth===undefined){
@@ -889,7 +1102,6 @@ daedalus=(function(){
               }
             }
             if(item.auth===undefined&&item.noauth===true){
-              console.log(item,has_auth);
               if(!has_auth){
                 item.callback(fn,match);
                 return true;
@@ -912,23 +1124,45 @@ daedalus=(function(){
           }
           addAuthRoute(pattern,callback,fallback){
             const re=patternToRegexp(pattern);
-            this.routes.push({pattern,callback,auth:true,fallback,re});
+            this.routes.push({'pattern':pattern,'callback':callback,'auth':true,'fallback':fallback,
+                              're':re});
           }
           addNoAuthRoute(pattern,callback,fallback){
             const re=patternToRegexp(pattern);
-            this.routes.push({pattern,callback,noauth:true,fallback,re});
+            this.routes.push({'pattern':pattern,'callback':callback,'noauth':true,
+                              'fallback':fallback,'re':re});
           }
-        }
+        };
         return[AuthenticatedRouter,Router,locationMatch,patternCompile,patternToRegexp];
         
       })();
     const[downloadFile,uploadFile]=(function(){
+        /**
+         * Daedalus File API
+         *
+         * Methods for uploading and downloading files to a webserver
+         *
+         * Compatability Notes:
+         *   uploadFile does not work for Android WebView.
+         *   Instead an API is needed for background file uploads using
+         *   Android APIs.
+         *
+         *   downloadFile does not work for Android WebView.
+         *   Instead generate an anchor tag with the href and download proptery.
+         *
+         *   e.g.
+         *      <a href="url" download="filename">Click Here</a>
+         *
+         *   Alternativley, an android API can be implemented to support downloads
+         *
+         */
+
         function saveBlob(blob,fileName){
           let a=document.createElement('a');
           a.href=window.URL.createObjectURL(blob);
           a.download=fileName;
           a.dispatchEvent(new MouseEvent('click'));
-        }
+        };
         function downloadFile(url,headers={},params={},success=null,failure=null){
         
           const postData=new FormData();
@@ -937,13 +1171,14 @@ daedalus=(function(){
           xhr.open('GET',url+queryString);
           for(let key in headers){
             xhr.setRequestHeader(key,headers[key]);
+            ;
           }
           xhr.responseType='blob';
           xhr.onload=function(this_,event_){
             let blob=this_.target.response;
             if(!blob||this_.target.status!=200){
               if(failure!==null){
-                failure({status:this_.target.status,blob});
+                failure({'status':this_.target.status,'blob':blob});
               }
             }else{
               let contentDispo=xhr.getResponseHeader('Content-Disposition');
@@ -960,77 +1195,90 @@ daedalus=(function(){
                 parts=xhr.responseURL.split('/');
                 parts=parts[parts.length-1].split('?');
                 fileName=parts[0]||'resource.bin';
+                ;
               }
               saveBlob(blob,fileName);
               if(success!==null){
-                success({url,fileName,blob});
+                success({'url':url,'fileName':fileName,'blob':blob});
               }
+              ;
+              ;
             }
           };
           xhr.send(postData);
-        }
+        };
         function _uploadFileImpl(elem,urlbase,headers={},params={},success=null,failure=null,
                   progress=null){
           let queryString=util.serializeParameters(params);
           let arrayLength=elem.files.length;
           for(let i=0;i<arrayLength;i++)
-            {
-              let file=elem.files[i];
-              let bytesTransfered=0;
-              let url;
-              if(urlbase.endsWith('/')){
-                url=urlbase+file.name;
-              }else{
-                url=urlbase+'/'+file.name;
-              }
-              url+=queryString;
-              let xhr=new XMLHttpRequest();
-              xhr.open('POST',url,true);
-              for(let key in headers){
-                xhr.setRequestHeader(key,headers[key]);
-              }
-              xhr.upload.onprogress=function(event){
-                if(event.lengthComputable){
-                  if(progress!==null){
-                    bytesTransfered=event.loaded;
-                    progress({bytesTransfered,fileSize:file.size,fileName:file.name,
-                                              finished:false});
-                  }
-                }
-              };
-              xhr.onreadystatechange=function(){
-                if(xhr.readyState==4&&xhr.status==200){
-                  if(success!==null){
-                    let params={fileName:file.name,url,lastModified:file.lastModified,
-                                          size:file.size,type:file.type};
-                    success(params);
-                    if(progress!==null){
-                      progress({bytesTransfered:file.size,fileSize:file.size,fileName:file.name,
-                                                  finished:true});
-                    }
-                  }
-                }else if(xhr.status>=400){
-                  if(failure!==null){
-                    let params={fileName:file.name,url,status:xhr.status};
-                    failure(params);
-                    if(progress!==null){
-                      progress({bytesTransfered,fileSize:file.size,fileName:file.name,
-                                                  finished:true});
-                    }
-                  }
-                }else{
-                  console.log("xhr status changed: "+xhr.status);
-                }
-              };
-              if(progress!==null){
-                progress({bytesTransfered,fileSize:file.size,fileName:file.name,finished:false,
-                                      first:true});
-              }
-              let fd=new FormData();
-              fd.append('upload',file);
-              xhr.send(fd);
+          {
+            let file=elem.files[i];
+            let bytesTransfered=0;
+            let url;
+            if(urlbase.endsWith('/')){
+              url=urlbase+file.name;
+            }else{
+              url=urlbase+'/'+file.name;
             }
-        }
+            url+=queryString;
+            let xhr=new XMLHttpRequest();
+            xhr.open('POST',url,true);
+            for(let key in headers){
+              xhr.setRequestHeader(key,headers[key]);
+              ;
+            }
+            xhr.upload.onprogress=function(event){
+              if(event.lengthComputable){
+                if(progress!==null){
+                  bytesTransfered=event.loaded;
+                  progress({'bytesTransfered':bytesTransfered,'fileSize':file.size,
+                                          'fileName':file.name,'finished':false});
+                }
+              }
+            };
+            xhr.onreadystatechange=function(){
+              if(xhr.readyState==4&&xhr.status==200){
+                if(success!==null){
+                  let params={'fileName':file.name,'url':url,'lastModified':file.lastModified,
+                                      'size':file.size,'type':file.type};
+                  success(params);
+                  if(progress!==null){
+                    progress({'bytesTransfered':file.size,'fileSize':file.size,'fileName':file.name,
+                                              'finished':true});
+                  }
+                  ;
+                }
+              }else if(xhr.status>=400){
+                if(failure!==null){
+                  let params={'fileName':file.name,'url':url,'status':xhr.status};
+                  
+                  failure(params);
+                  if(progress!==null){
+                    progress({'bytesTransfered':bytesTransfered,'fileSize':file.size,
+                                              'fileName':file.name,'finished':true});
+                  }
+                  ;
+                }
+              }else{
+                console.log("xhr status changed: "+xhr.status);
+              }
+            };
+            if(progress!==null){
+              progress({'bytesTransfered':bytesTransfered,'fileSize':file.size,'fileName':file.name,
+                                  'finished':false,'first':true});
+            }
+            let fd=new FormData();
+            fd.append('upload',file);
+            xhr.send(fd);
+          }
+          ;
+          ;
+          ;
+          ;
+          ;
+          ;
+        };
         function uploadFile(urlbase,headers={},params={},success=null,failure=null,
                   progress=null){
           let element=document.createElement('input');
@@ -1041,7 +1289,7 @@ daedalus=(function(){
             
           };
           element.dispatchEvent(new MouseEvent('click'));
-        }
+        };
         return[downloadFile,uploadFile];
       })();
     const[OSName,platform]=(function(){
@@ -1112,29 +1360,36 @@ daedalus=(function(){
           let pixels=div.offsetWidth/1000;
           parentElement.removeChild(div);
           return pixels;
-        }
-        const isMobile={Android:function(){
+        };
+        const isMobile={'Android':function(){
             return navigator.userAgent.match(/Android/i);
-          },BlackBerry:function(){
+          },'BlackBerry':function(){
             return navigator.userAgent.match(/BlackBerry/i);
-          },iOS:function(){
+          },'iOS':function(){
             return navigator.userAgent.match(/iPhone|iPad|iPod/i);
-          },Opera:function(){
+          },'Opera':function(){
             return navigator.userAgent.match(/Opera Mini/i);
-          },Windows:function(){
+          },'Windows':function(){
             return navigator.userAgent.match(/IEMobile/i)||navigator.userAgent.match(
                           /WPDesktop/i);
-          },any:function(){
+          },'any':function(){
             return(isMobile.Android()||isMobile.BlackBerry()||isMobile.iOS()||isMobile.Opera(
                             )||isMobile.Windows());
           }};
-        const platform={OSName,browser:browserName,fullVersion,majorVersion,appName:navigator.appName,
-                  userAgent:navigator.userAgent,platform:build_platform||'web',isAndroid:build_platform==='android',
-                  isMobile:(!!isMobile.any())};
-        console.log(platform);
+        const platform={'OSName':OSName,'browser':browserName,'fullVersion':fullVersion,
+                  'majorVersion':majorVersion,'appName':navigator.appName,'userAgent':navigator.userAgent,
+                  'platform':build_platform||'web','isAndroid':build_platform==='android',
+                  'isQt':build_platform==='qt','isMobile':(!!isMobile.any())};
         return[OSName,platform];
       })();
     const[render,render_update]=(function(){
+        if(window.requestIdleCallback===undefined){
+          window.requestIdleCallback=(callback,options)=>{
+            setTimeout(()=>{
+                callback();
+              },0);
+          };
+        }
         let workstack=[];
         let deletions=[];
         let deletions_removed=new Set();
@@ -1144,26 +1399,27 @@ daedalus=(function(){
         let workLoopActive=false;
         let workCounter=0;
         function render(container,element){
-          wipRoot={type:"ROOT",dom:container,props:{},children:[element],_fibers:[
-                        ],alternate:currentRoot};
+          wipRoot={'type':"ROOT",'dom':container,'props':{},'children':[element],
+                      '_fibers':[],'alternate':currentRoot};
           workstack.push(wipRoot);
           if(!workLoopActive){
             workLoopActive=true;
             setTimeout(workLoop,0);
           }
-        }
-        function render_update(element){
-          if(!element.dirty&&element._fiber!==null){
-            element.dirty=true;
-            const fiber={effect:'UPDATE',children:[element],_fibers:[],alternate:null,
-                          partial:true};
+        };
+        function render_update(element,debug=false){
+          if(!element._$dirty&&element._$fiber!==null){
+            element._$dirty=true;
+            const fiber={'effect':'UPDATE','children':[element],'_fibers':[],'alternate':null,
+                          'partial':true,'debug':debug};
             updatequeue.push(fiber);
+            ;
           }
           if(!workLoopActive){
             workLoopActive=true;
             setTimeout(workLoop,0);
           }
-        }
+        };
         DomElement.prototype._update=render_update;
         function workLoop(deadline=null){
           let shouldYield=false;
@@ -1209,6 +1465,7 @@ daedalus=(function(){
               }
             }
           }catch(e){
+            console.log(e);
             console.error("unhandled workloop exception: "+e.message);
           };
           let debug=workstack.length>1||updatequeue.length>1;
@@ -1224,13 +1481,13 @@ daedalus=(function(){
           }else{
             workLoopActive=false;
           }
-        }
+        };
         function performUnitOfWork(fiber){
           if(!fiber.dom&&fiber.effect=='CREATE'){
             fiber.dom=createDomNode(fiber);
           }
           reconcileChildren(fiber);
-        }
+        };
         function reconcileChildren(parentFiber){
           workCounter+=1;
           const oldParentFiber=parentFiber.alternate;
@@ -1239,17 +1496,21 @@ daedalus=(function(){
                 child._delete=true;
               });
           }
+          if(parentFiber.debug){
+            console.log("do reconcileChildren");
+          }
           let prev=parentFiber;
           while(prev.next){
             prev=prev.next;
           }
+          let children_out_of_order=false;
           parentFiber.children.forEach((element,index)=>{
               if(!element||!element.type){
                 console.error(`${parentFiber.element.props.id}: undefined child element at index ${index} `);
                 
                 return;
               }
-              const oldFiber=element._fiber;
+              const oldFiber=element._$fiber;
               element._delete=false;
               const oldIndex=oldFiber?oldFiber.index:index;
               if(parentFiber.partial){
@@ -1257,7 +1518,7 @@ daedalus=(function(){
               }
               let effect;
               if(!!oldFiber){
-                if(oldIndex==index&&element.dirty===false){
+                if(oldIndex==index&&element._$dirty===false){
                   return;
                 }else{
                   effect='UPDATE';
@@ -1265,11 +1526,15 @@ daedalus=(function(){
               }else{
                 effect='CREATE';
               }
-              element.dirty=false;
-              const newFiber={type:element.type,effect:effect,props:{...element.props},
-                              children:element.children.slice(),_fibers:[],parent:(parentFiber.partial&&oldFiber)?oldFiber.parent:parentFiber,
-                              alternate:oldFiber,dom:oldFiber?oldFiber.dom:null,signals:element.signals,
-                              element:element,index:index,oldIndex:oldIndex};
+              element._$dirty=false;
+              const newFiber={'type':element.type,'effect':effect,'props':{...element.props},
+                              'children':element.children.slice(),'_fibers':[],'parent':(parentFiber.partial&&oldFiber)?oldFiber.parent:parentFiber,
+                              'alternate':oldFiber,'dom':oldFiber?oldFiber.dom:null,'element':element,
+                              'index':index,'oldIndex':oldIndex,'debug':((parentFiber)||{}).debug};
+              
+              if(index!==oldIndex){
+                children_out_of_order=true;
+              }
               if(!newFiber.parent.dom){
                 console.error(`element parent is not mounted id: ${element.props.id} effect: ${effect}`);
                 
@@ -1285,20 +1550,29 @@ daedalus=(function(){
               if(Array.isArray(newFiber.props.className)){
                 newFiber.props.className=newFiber.props.className.join(' ');
               }
-              element._fiber=newFiber;
+              element._$fiber=newFiber;
               parentFiber._fibers.push(newFiber);
               prev.next=newFiber;
               prev=newFiber;
               workstack.push(newFiber);
             });
+          if(children_out_of_order===true){
+            const newFiber={'type':parentFiber.type,'effect':"SORT_CHILDREN",'props':parentFiber.props,
+                          'children':parentFiber.children.slice(),'_fibers':[],'parent':parentFiber.parent,
+                          'dom':parentFiber.dom,'debug':parentFiber.debug};
+            prev.next=newFiber;
+            prev=newFiber;
+            workstack.push(newFiber);
+            ;
+          }
           if(!!oldParentFiber){
             oldParentFiber.children.forEach(child=>{
                 if(child._delete){
-                  deletions.push(child._fiber);
+                  deletions.push(child._$fiber);
                 }
               });
           }
-        }
+        };
         function commitRoot(){
           deletions_removed=new Set();
           deletions.forEach(removeDomNode);
@@ -1318,12 +1592,15 @@ daedalus=(function(){
           currentRoot=wipRoot;
           wipRoot=null;
           deletions=[];
-        }
+        };
         function commitWork(fiber){
           const parentDom=fiber.parent.dom;
           if(!parentDom){
             console.warn(`element has no parent. effect: ${fiber.effect}`);
             return;
+          }
+          if(((fiber)||{}).debug){
+            console.log("commitWork: "+fiber.effect);
           }
           if(fiber.effect==='CREATE'){
             const length=parentDom.children.length;
@@ -1337,14 +1614,25 @@ daedalus=(function(){
               requestIdleCallback(fiber.element.elementMounted.bind(fiber.element));
               
             }
+            ;
+            ;
           }else if(fiber.effect==='UPDATE'){
             fiber.alternate.alternate=null;
             updateDomNode(fiber);
           }else if(fiber.effect==='DELETE'){
             fiber.alternate.alternate=null;
             removeDomNode(fiber);
+          }else if(fiber.effect==='SORT_CHILDREN'){
+            Array.from(fiber.dom.childNodes).forEach((node,idx)=>{
+                let expected_index=node._$fiber.index;
+                if(node._$fiber.index!==idx){
+                  fiber.dom.removeChild(node);
+                  fiber.dom.insertBefore(node,fiber.dom.children[expected_index]);
+                  
+                }
+              });
           }
-        }
+        };
         const isEvent=key=>key.startsWith("on");
         const isProp=key=>!isEvent(key);
         const isCreate=(prev,next)=>key=>(key in next&&!(key in prev));
@@ -1359,10 +1647,16 @@ daedalus=(function(){
               dom.addEventListener(event,fiber.props[key]);
             });
           Object.keys(fiber.props).filter(isProp).forEach(key=>{
-              dom[key]=fiber.props[key];
+              const propValue=fiber.props[key];
+              if(propValue===null){
+                delete dom[key];
+              }else{
+                dom[key]=propValue;
+              }
             });
+          dom._$fiber=fiber;
           return dom;
-        }
+        };
         function updateDomNode(fiber){
           const dom=fiber.dom;
           const parentDom=fiber.parent.dom;
@@ -1371,6 +1665,10 @@ daedalus=(function(){
           if(!dom){
             console.log("fiber does not contain a dom");
             return;
+          }
+          dom._$fiber=fiber;
+          if(fiber.debug){
+            console.log("update",fiber.oldIndex,fiber.index);
           }
           if(fiber.oldIndex!=fiber.index&&parentDom){
             if(parentDom.children[fiber.index]!==dom){
@@ -1396,16 +1694,16 @@ daedalus=(function(){
                           key)||isUpdate(oldProps,newProps)(key)).forEach(key=>{
               dom[key]=newProps[key];
             });
-        }
+        };
         function _removeDomNode_elementFixUp(element){
           if(element.elementUnmounted){
             deletions_removed.add(element);
           }
           element.children.forEach(child=>{
-              child._fiber=null;
+              child._$fiber=null;
               _removeDomNode_elementFixUp(child);
             });
-        }
+        };
         function removeDomNode(fiber){
           if(fiber.dom){
             if(fiber.dom.parentNode){
@@ -1415,19 +1713,23 @@ daedalus=(function(){
             console.error("failed to delete",fiber.element.type);
           }
           fiber.dom=null;
-          fiber.element._fiber=null;
+          fiber.element._$fiber=null;
           fiber.alternate=null;
           _removeDomNode_elementFixUp(fiber.element);
-        }
+        };
         return[render,render_update];
       })();
-    return{AuthenticatedRouter,ButtonElement,DomElement,DraggableList,HeaderElement,
-          LinkElement,ListElement,ListItemElement,NumberInputElement,OSName,Router,Signal,
-          StyleSheet,TextElement,TextInputElement,build_platform,downloadFile,env,getStyleSheet,
-          locationMatch,parseParameters,patternCompile,patternToRegexp,platform,render,
-          render_update,uploadFile,util};
+    return{'AuthenticatedRouter':AuthenticatedRouter,'ButtonElement':ButtonElement,
+          'DomElement':DomElement,'DraggableList':DraggableList,'DraggableListItem':DraggableListItem,
+          'HeaderElement':HeaderElement,'LinkElement':LinkElement,'ListElement':ListElement,
+          'ListItemElement':ListItemElement,'OSName':OSName,'Router':Router,'StyleSheet':StyleSheet,
+          'TextElement':TextElement,'TextInputElement':TextInputElement,'build_platform':build_platform,
+          'downloadFile':downloadFile,'env':env,'getStyleSheet':getStyleSheet,'locationMatch':locationMatch,
+          'parseParameters':parseParameters,'patternCompile':patternCompile,'patternToRegexp':patternToRegexp,
+          'platform':platform,'render':render,'render_update':render_update,'uploadFile':uploadFile,
+          'util':util};
   })();
-Object.assign(api,(function(api){
+Object.assign(api,(function(requests){
       "use strict";
       const[geo_distance]=(function(){
           const RAD2DEG=180/Math.PI;
@@ -1437,13 +1739,13 @@ Object.assign(api,(function(api){
             let avgY=0;
             let avgZ=0;
             for(var i=0;i<points.length;i++)
-              {
-                var lat=points[i][0]*DEG2RAD;
-                var lon=points[i][1]*DEG2RAD;
-                avgX+=Math.cos(lat)*Math.cos(lon);
-                avgY+=Math.cos(lat)*Math.sin(lon);
-                avgZ+=Math.sin(lat);
-              }
+            {
+              var lat=points[i][0]*DEG2RAD;
+              var lon=points[i][1]*DEG2RAD;
+              avgX+=Math.cos(lat)*Math.cos(lon);
+              avgY+=Math.cos(lat)*Math.sin(lon);
+              avgZ+=Math.sin(lat);
+            }
             avgX=avgX/points.length;
             avgY=avgY/points.length;
             avgZ=avgZ/points.length;
@@ -1451,7 +1753,7 @@ Object.assign(api,(function(api){
             var lon=Math.atan2(avgY,avgX)*RAD2DEG;
             var lat=Math.atan2(avgZ,hyp)*RAD2DEG;
             return[lat,lon];
-          }
+          };
           function geo_distance(lat1,lon1,lat2,lon2){
             const pi=Math.PI;
             const R=6371e3;
@@ -1464,13 +1766,13 @@ Object.assign(api,(function(api){
             const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
             const d=R*c;
             return d;
-          }
+          };
           function meters_to_feet(distance){
             return distance*3.28083333;
-          }
+          };
           function feet_to_miles(distance){
             return distance/528;
-          }
+          };
           return[geo_distance];
         })();
       const[geoGetPostalCode,geoGetPostalCodeInfo,getLastKnownLocation,nwsGetEndpoints,
@@ -1479,80 +1781,123 @@ Object.assign(api,(function(api){
             if(daedalus.platform.isAndroid&&!!Client){
               let s=Client.getLastKnownLocation();
               return JSON.parse(s);
+              ;
             }else{
-              return{lat:42.357902,lon:-71.06408};
+              return{'lat':42.357902,'lon':-71.06408};
             }
-          }
+          };
           const weather_base="https://api.weather.gov";
+          /**
+           * returns a json structure containing:
+           *  .properties.forecastHourly : endpoint for hourly forecast
+           *  .properties.gridId
+           *  .properties.gridX
+           *  .properties.gridY
+           */
+
           function nwsGetEndpoints(lat,lon){
             const url=weather_base+`/points/${lat},${lon}`;
             console.log(url);
             return api.requests.get_json(url);
-          }
+          };
           function nwsGetHourlyForecast(id,x,y){
             const url=weather_base+`/gridpoints/${id}/${x},${y}/forecast/hourly`;
             
             console.log(url);
             return api.requests.get_json(url);
-          }
+          };
           const geo_base="http://api.geonames.org";
           const geo_username="daedalus_android_run";
+          /**
+           * returns a json object containing information about a single postal code
+           *
+           *  .postalCodes                :
+           *  .postalCodes[i].postalCode  :
+           *  .postalCodes[i].lat         :
+           *  .postalCodes[i].lng         :
+           *  .postalCodes[i].placeNAme   : city
+           *  .postalCodes[i].adminName1  : state
+           *  .postalCodes[i].adminName1  : county
+           *  .postalCodes[i].adminCode1  : state abbreviation
+           *  .postalCodes[i].countryCode :
+           */
+
           function geoGetPostalCode(lat,lng){
             const url=geo_base+`/findNearbyPostalCodesJSON?lat=${lat}&lng=${lng}&maxRows=1&username=${geo_username}`;
             
             console.log(url);
             return api.requests.get_json(url);
-          }
+          };
+          /**
+           * returns a json object containing information about a single postal code
+           *
+           *  .postalCodes                :
+           *  .postalCodes[i].postalCode  :
+           *  .postalCodes[i].lat         :
+           *  .postalCodes[i].lng         :
+           *  .postalCodes[i].placeNAme   : city
+           *  .postalCodes[i].adminName1  : state
+           *  .postalCodes[i].adminName1  : county
+           *  .postalCodes[i].adminCode1  : state abbreviation
+           *  .postalCodes[i].countryCode :
+           */
+
           function geoGetPostalCodeInfo(postal_code){
             const url=geo_base+`/postalCodeSearchJSON?postalcode=${postal_code}&maxRows=1&username=${geo_username}`;
             
             console.log(url);
             return api.requests.get_json(url);
-          }
+          };
           function distance(x1,y1,x2,y2){
             return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
-          }
+          };
           function zipGetPostalCode(lat,lng){
             let d=Number.MAX_SAFE_INTEGER;
             let p=null;
             for(let i=0;i<zipcode_dat.length;i++)
-              {
-                let t=distance(zipcode_dat[i][zipcode_lat],zipcode_dat[i][zipcode_lon],
-                                  lat,lng);
-                if(t<d){
-                  d=t;
-                  p=zipcode_dat[i][zipcode_zip];
-                }
+            {
+              let t=distance(zipcode_dat[i][zipcode_lat],zipcode_dat[i][zipcode_lon],
+                              lat,lng);
+              if(t<d){
+                d=t;
+                p=zipcode_dat[i][zipcode_zip];
               }
+            }
+            ;
+            ;
             return p;
-          }
+          };
           function zipGetPostalCodeInfo(postal_code){
             console.log(postal_code);
             if(!postal_code||postal_code.length!=5){
               return null;
             }
             for(let i=0;i<zipcode_dat.length;i++)
-              {
-                if(zipcode_dat[i][zipcode_zip]==postal_code){
-                  return{lat:zipcode_dat[i][zipcode_lat],lon:zipcode_dat[i][zipcode_lon]};
-                  
-                }
+            {
+              if(zipcode_dat[i][zipcode_zip]==postal_code){
+                return{'lat':zipcode_dat[i][zipcode_lat],'lon':zipcode_dat[i][zipcode_lon]};
+                
               }
+            }
+            ;
             return null;
-          }
+          };
           return[geoGetPostalCode,geoGetPostalCodeInfo,getLastKnownLocation,nwsGetEndpoints,
                       nwsGetHourlyForecast,zipGetPostalCode,zipGetPostalCodeInfo];
         })();
-      return{geoGetPostalCode,geoGetPostalCodeInfo,geo_distance,getLastKnownLocation,
-              nwsGetEndpoints,nwsGetHourlyForecast,zipGetPostalCode,zipGetPostalCodeInfo};
-      
-    })(api));
+      return{'geoGetPostalCode':geoGetPostalCode,'geoGetPostalCodeInfo':geoGetPostalCodeInfo,
+              'geo_distance':geo_distance,'getLastKnownLocation':getLastKnownLocation,'nwsGetEndpoints':nwsGetEndpoints,
+              'nwsGetHourlyForecast':nwsGetHourlyForecast,'zipGetPostalCode':zipGetPostalCode,
+              'zipGetPostalCodeInfo':zipGetPostalCodeInfo};
+    })(api.requests));
 resources=(function(daedalus){
     "use strict";
     const platform_prefix=daedalus.platform.isAndroid?"file:///android_asset/site/static/icon/":"/static/icon/";
     
+    const platform_effect_prefix=daedalus.platform.isAndroid?"file:///android_asset/site/static/effects/":"/static/effects/";
+    
     const svg_icon_names=["back","button_pause","button_play","button_split","button_stop",
-          "cloud","gear","map","map_add","map_close","map_dec","map_inc","map_pause",
+          "clock","cloud","gear","map","map_add","map_close","map_dec","map_inc","map_pause",
           "map_play","map_remove","map_split","marker_L","marker_R","radar","share","shoe",
           "trash","whiteshoe"];
     const png_icon_names=["map_end","map_point","map_start"];
@@ -1564,7 +1909,14 @@ resources=(function(daedalus){
     png_icon_names.forEach(name=>{
         png[name]=platform_prefix+name+".png";
       });
-    return{png,svg};
+    const effect_names={"snd_round_30s":"smw_coin.normalized.wav","snd_round_10s":"smw_power-up.normalized.wav",
+          "snd_round_start":"bell_2.normalized.wav","snd_round_end":"bell_1.normalized.wav",
+          "snd_rest_3s":"004B_000F.normalized.wav"};
+    const effects={};
+    Object.keys(effect_names).forEach(key=>{
+        effects[key]=platform_effect_prefix+effect_names[key];
+      });
+    return{'effects':effects,'png':png,'svg':svg};
   })(daedalus);
 router=(function(api,daedalus){
     "use strict";
@@ -1572,28 +1924,24 @@ router=(function(api,daedalus){
     const patternCompile=daedalus.patternCompile;
     let current_match=null;
     class AppRouter extends Router {
-      setMatch(match){
-        current_match=match;
-      }
-    }
-    AppRouter.match=()=>{
-      return current_match;
+
     };
     function navigate(location){
       history.pushState({},"",location);
-    }
+    };
     function back(location){
       history.back();
-    }
-    const route_urls={logEntry:"/log/:entry",log:"/log",settings:"/settings",plan:"/plan",
-          weather_location:"/weather/forecast/:lat/:lon/hourly",weather_radar:"/weather/radar",
-          weather_wildcard:"/weather/:path",weather:"/weather",wildCard:"/:path*",landing:"/"};
-    
+    };
+    const route_urls={'logEntry':"/log/:entry",'log':"/log",'settings':"/settings",
+          'plan':"/plan",'weather_location':"/weather/forecast/:lat/:lon/hourly",'weather_radar':"/weather/radar",
+          'weather_wildcard':"/weather/:path",'weather':"/weather",'roundtimer':"/roundtimer",
+          'wildCard':"/:path*",'landing':"/"};
     const routes={};
     Object.keys(route_urls).map(key=>{
         routes[key]=patternCompile(route_urls[key]);
       });
-    return{AppRouter,back,navigate,route_urls,routes};
+    return{'AppRouter':AppRouter,'back':back,'navigate':navigate,'route_urls':route_urls,
+          'routes':routes};
   })(api,daedalus);
 components=(function(daedalus){
     "use strict";
@@ -1601,36 +1949,36 @@ components=(function(daedalus){
     const StyleSheet=daedalus.StyleSheet;
     const TextElement=daedalus.TextElement;
     const[MoreMenu]=(function(){
-        const style={moreMenuShadow:'dcs-26f83abc-0',moreMenu:'dcs-26f83abc-1',moreMenuShow:'dcs-26f83abc-2',
-                  moreMenuHide:'dcs-26f83abc-3',moreMenuButton:'dcs-26f83abc-4',color_default:'dcs-26f83abc-5',
-                  color_danger:'dcs-26f83abc-6'};
+        const style={'moreMenuShadow':'dcs-86bf508f-0','moreMenu':'dcs-86bf508f-1',
+                  'moreMenuShow':'dcs-86bf508f-2','moreMenuHide':'dcs-86bf508f-3','moreMenuButton':'dcs-86bf508f-4',
+                  'color_default':'dcs-86bf508f-5','color_danger':'dcs-86bf508f-6'};
         ;
         ;
         ;
         ;
         class MoreMenuButton extends DomElement {
           constructor(text,color,callback){
-            super("div",{className:[style.moreMenuButton,color],onClick:callback},
+            super("div",{'className':[style.moreMenuButton,color],'onClick':callback},
                           [new TextElement(text)]);
           }
           setText(text){
             this.children[0].setText(text);
           }
-        }
+        };
         class MoreMenuImpl extends DomElement {
           constructor(){
-            super("div",{className:[style.moreMenu]},[]);
+            super("div",{'className':[style.moreMenu]},[]);
           }
           onClick(event){
             event.stopPropagation();
           }
-        }
+        };
         class MoreMenu extends DomElement {
           constructor(callback_close){
-            super("div",{className:[style.moreMenuShadow,style.moreMenuHide]},[]);
-            
-            this.attrs={callback_close,impl:this.appendChild(new MoreMenuImpl())};
-            
+            super("div",{'className':[style.moreMenuShadow,style.moreMenuHide]},[
+                            ]);
+            this.attrs={'callback_close':callback_close,'impl':this.appendChild(new MoreMenuImpl(
+                                ))};
           }
           onClick(){
             this.attrs.callback_close();
@@ -1649,21 +1997,21 @@ components=(function(daedalus){
                 }));
           }
           hide(){
-            this.updateProps({className:[style.moreMenuShadow,style.moreMenuHide]});
+            this.updateProps({'className':[style.moreMenuShadow,style.moreMenuHide]});
             
           }
           show(){
-            this.updateProps({className:[style.moreMenuShadow,style.moreMenuShow]});
+            this.updateProps({'className':[style.moreMenuShadow,style.moreMenuShow]});
             
           }
-        }
+        };
         return[MoreMenu];
       })();
     const[HSpacer,VSpacer]=(function(){
         class HSpacer extends DomElement {
           constructor(width){
             super("div",{},[]);
-            this.attrs={width};
+            this.attrs={'width':width};
           }
           elementMounted(){
             this._setWidth();
@@ -1683,11 +2031,11 @@ components=(function(daedalus){
               node.style['height']="1px";
             }
           }
-        }
+        };
         class VSpacer extends DomElement {
           constructor(height){
             super("div",{},[]);
-            this.attrs={height};
+            this.attrs={'height':height};
           }
           elementMounted(){
             this._setHeight();
@@ -1707,13 +2055,13 @@ components=(function(daedalus){
               node.style['width']="1px";
             }
           }
-        }
+        };
         return[HSpacer,VSpacer];
       })();
     const[]=(function(){
         return[];
       })();
-    return{HSpacer,MoreMenu,VSpacer};
+    return{'HSpacer':HSpacer,'MoreMenu':MoreMenu,'VSpacer':VSpacer};
   })(daedalus);
 app=(function(api,components,daedalus,resources,router){
     "use strict";
@@ -1721,7 +2069,7 @@ app=(function(api,components,daedalus,resources,router){
     const StyleSheet=daedalus.StyleSheet;
     const svg=resources.svg;
     const meters_per_mile=1609.34;
-    const spm_to_mpk=1000.0/60.0;
+    const spm_to_mpk=16.666666666666668;
     const spm_to_mpm=meters_per_mile/60.0;
     const spm_color_map_blue_green=["#A0A0A0","#000080","#002060","#004040","#006020",
           "#008000","#006600","#004D00","#003300","#001A00","#000000"];
@@ -1734,31 +2082,33 @@ app=(function(api,components,daedalus,resources,router){
         return"#000000";
       }
       return spm_color_map[v];
-    }
-    const style={body:'dcs-2e988578-0',header:'dcs-2e988578-1',headerDiv:'dcs-2e988578-2',
-          toolbar:'dcs-2e988578-3',toolbarInner:'dcs-2e988578-4',app:'dcs-2e988578-5',
-          appTracker:'dcs-2e988578-6',paceRow:'dcs-2e988578-7',paceCol:'dcs-2e988578-8',
-          appButtons:'dcs-2e988578-9',svgButton:'dcs-2e988578-10',hide:'dcs-2e988578-11',
-          invisible:'dcs-2e988578-12',headerText:'dcs-2e988578-13',titleText:'dcs-2e988578-14',
-          smallText:'dcs-2e988578-15',mediumText:'dcs-2e988578-16',largeText:'dcs-2e988578-17',
-          dateText:'dcs-2e988578-18',flex_center:'dcs-2e988578-19',flex_spread:'dcs-2e988578-20',
-          logView:'dcs-2e988578-21',logItem:'dcs-2e988578-22',logItemCol1:'dcs-2e988578-23',
-          logItemCol2:'dcs-2e988578-24',logItemRowTitle:'dcs-2e988578-25',logItemRowInfo:'dcs-2e988578-26',
-          logItemActions:'dcs-2e988578-27',logEntryView:'dcs-2e988578-28',map:'dcs-2e988578-29',
-          map2:'dcs-2e988578-30',chart:'dcs-2e988578-31',trackBar:'dcs-2e988578-32',trackBar_bar:'dcs-2e988578-33',
-          trackBar_button:'dcs-2e988578-34',trackBar_text_left:'dcs-2e988578-35',trackBar_text_right:'dcs-2e988578-36',
-          switchMain:'dcs-2e988578-37',switchMainActive:'dcs-2e988578-38',switchButton:'dcs-2e988578-39',
-          switchButtonActive:'dcs-2e988578-40',settingsRow:'dcs-2e988578-41',weatherCtrl:'dcs-2e988578-42',
-          weatherCtrlInput:'dcs-2e988578-43',weatherCtrlButton:'dcs-2e988578-44',weatherError:'dcs-2e988578-45',
-          weatherErrorHide:'dcs-2e988578-46',nwsDay:'dcs-2e988578-47',nwsDayRowInfo:'dcs-2e988578-48',
-          nwsDayRowInfoLeft:'dcs-2e988578-49',nwsDayRowInfoRight:'dcs-2e988578-50',nwsDayColGrow:'dcs-2e988578-51',
-          nwsItem:'dcs-2e988578-52',nwsItemColImage:'dcs-2e988578-53',nwsItemColFixed:'dcs-2e988578-54',
-          nwsItemColTime:'dcs-2e988578-55',nwsItemColGrow:'dcs-2e988578-56'};
+    };
+    const style={'body':'dcs-59d27a9b-0','header':'dcs-59d27a9b-1','headerDiv':'dcs-59d27a9b-2',
+          'toolbar':'dcs-59d27a9b-3','toolbarInner':'dcs-59d27a9b-4','app':'dcs-59d27a9b-5',
+          'appTracker':'dcs-59d27a9b-6','paceRow':'dcs-59d27a9b-7','paceCol':'dcs-59d27a9b-8',
+          'appButtons':'dcs-59d27a9b-9','svgButton':'dcs-59d27a9b-10','headerText':'dcs-59d27a9b-11',
+          'titleText':'dcs-59d27a9b-12','smallText':'dcs-59d27a9b-13','mediumText':'dcs-59d27a9b-14',
+          'largeText':'dcs-59d27a9b-15','veryLargeText':'dcs-59d27a9b-16','dateText':'dcs-59d27a9b-17',
+          'flex_center':'dcs-59d27a9b-18','flex_spread':'dcs-59d27a9b-19','logView':'dcs-59d27a9b-20',
+          'logItem':'dcs-59d27a9b-21','logItemCol1':'dcs-59d27a9b-22','logItemCol2':'dcs-59d27a9b-23',
+          'logItemRowTitle':'dcs-59d27a9b-24','logItemRowInfo':'dcs-59d27a9b-25','logItemActions':'dcs-59d27a9b-26',
+          'logEntryView':'dcs-59d27a9b-27','map':'dcs-59d27a9b-28','map2':'dcs-59d27a9b-29',
+          'chart':'dcs-59d27a9b-30','trackBar':'dcs-59d27a9b-31','trackBar_bar':'dcs-59d27a9b-32',
+          'trackBar_button':'dcs-59d27a9b-33','trackBar_text_left':'dcs-59d27a9b-34',
+          'trackBar_text_right':'dcs-59d27a9b-35','switchMain':'dcs-59d27a9b-36','switchMainActive':'dcs-59d27a9b-37',
+          'switchButton':'dcs-59d27a9b-38','switchButtonActive':'dcs-59d27a9b-39','settingsRow':'dcs-59d27a9b-40',
+          'weatherCtrl':'dcs-59d27a9b-41','weatherCtrlInput':'dcs-59d27a9b-42','weatherCtrlButton':'dcs-59d27a9b-43',
+          'weatherError':'dcs-59d27a9b-44','weatherErrorHide':'dcs-59d27a9b-45','nwsDay':'dcs-59d27a9b-46',
+          'nwsDayRowInfo':'dcs-59d27a9b-47','nwsDayRowInfoLeft':'dcs-59d27a9b-48','nwsDayRowInfoRight':'dcs-59d27a9b-49',
+          'nwsDayColGrow':'dcs-59d27a9b-50','nwsItem':'dcs-59d27a9b-51','nwsItemColImage':'dcs-59d27a9b-52',
+          'nwsItemColFixed':'dcs-59d27a9b-53','nwsItemColTime':'dcs-59d27a9b-54','nwsItemColGrow':'dcs-59d27a9b-55',
+          'roundTimerPresetRow':'dcs-59d27a9b-56','roundTimerConfigureRow':'dcs-59d27a9b-57',
+          'hide':'dcs-59d27a9b-58','invisible':'dcs-59d27a9b-59'};
     function pad(n,width,z){
       z=z||'0';
       n=n+'';
       return n.length>=width?n:new Array(width-n.length+1).join(z)+n;
-    }
+    };
     function fmtTime(t){
       let s=t/1000;
       let m=Math.floor(s/60);
@@ -1771,27 +2121,27 @@ app=(function(api,components,daedalus,resources,router){
       }else{
         return`${m}:${s}`;
       }
-    }
+    };
     function fmtPace(s){
       s=s*60;
       let m=Math.floor(s/60);
       s=pad(Math.floor(s%60),2);
       return`${m}:${s}`;
-    }
+    };
     class Div extends daedalus.DomElement {
       constructor(className,children){
-        super("div",{className},children);
+        super("div",{'className':className},children);
       }
-    }
+    };
     class Text extends daedalus.DomElement {
       constructor(text,cls){
-        super("div",{className:cls},[]);
+        super("div",{'className':cls},[]);
         this.attrs.txt=this.appendChild(new daedalus.TextElement(text));
       }
       setText(text){
         this.attrs.txt.setText(text);
       }
-    }
+    };
     class SwitchElement extends Div {
       constructor(){
         super(style.switchMain);
@@ -1809,10 +2159,10 @@ app=(function(api,components,daedalus,resources,router){
       isChecked(){
         return this.attrs.btn.hasClassName(style.switchButtonActive);
       }
-    }
+    };
     class SvgElement extends DomElement {
       constructor(url,props){
-        super("img",{src:url,...props},[]);
+        super("img",{'src':url,...props},[]);
       }
       onLoad(event){
         console.warn("success loading: ",this.props.src);
@@ -1820,11 +2170,11 @@ app=(function(api,components,daedalus,resources,router){
       onError(error){
         console.warn("error loading: ",this.props.src,JSON.stringify(error));
       }
-    }
+    };
     class SvgButtonElement extends SvgElement {
       constructor(url,callback,size=96){
-        super(url,{width:size,height:size,className:style.svgButton});
-        this.attrs={callback};
+        super(url,{'width':size,'height':size,'className':style.svgButton});
+        this.attrs={'callback':callback};
       }
       onClick(event){
         if(this.attrs.callback){
@@ -1835,13 +2185,13 @@ app=(function(api,components,daedalus,resources,router){
         this.props.src=url;
         this.update();
       }
-    }
+    };
     class NavHeader extends DomElement {
       constructor(){
-        super("div",{className:style.header},[]);
-        this.attrs={div:new DomElement("div",{className:style.headerDiv},[]),toolbar:new DomElement(
-                      "div",{className:style.toolbar},[]),toolbarInner:new DomElement("div",
-                      {className:style.toolbarInner},[])};
+        super("div",{'className':style.header},[]);
+        this.attrs={'div':new DomElement("div",{'className':style.headerDiv},[]),
+                  'toolbar':new DomElement("div",{'className':style.toolbar},[]),'toolbarInner':new DomElement(
+                      "div",{'className':style.toolbarInner},[])};
         this.appendChild(this.attrs.div);
         this.attrs.div.appendChild(this.attrs.toolbar);
         this.attrs.toolbar.appendChild(this.attrs.toolbarInner);
@@ -1862,10 +2212,10 @@ app=(function(api,components,daedalus,resources,router){
           this.attrs.toolbarInner.removeClassName(style.invisible);
         }
       }
-    }
+    };
     class TrackerPage extends daedalus.DomElement {
       constructor(){
-        super("div",{className:[style.app,style.appTracker]},[]);
+        super("div",{'className':[style.app,style.appTracker]},[]);
         this.attrs.header=this.appendChild(new NavHeader());
         this.attrs.header.addAction(resources.svg.gear,()=>{
             router.navigate(router.routes.settings());
@@ -1880,7 +2230,11 @@ app=(function(api,components,daedalus,resources,router){
           });
         this.attrs.header.addElement(new components.HSpacer("1em"));
         this.attrs.header.addAction(resources.svg.cloud,()=>{
-            router.navigate(router.routes.weather({path:''}));
+            router.navigate(router.routes.weather({'path':''}));
+          });
+        this.attrs.header.addElement(new components.HSpacer("1em"));
+        this.attrs.header.addAction(resources.svg.clock,()=>{
+            router.navigate(router.routes.roundtimer());
           });
         this.attrs.header.addElement(new components.HSpacer("1em"));
         this.attrs.distRow=this.appendChild(new Div(style.paceCol));
@@ -1910,7 +2264,7 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.txt_pace_avg=this.attrs.paceCol2.appendChild(new Text("0",style.mediumText));
         
         this.appendChild(new Div(null));
-        this.attrs.dashboard=this.appendChild(new DomElement("div",{className:style.appButtons}));
+        this.attrs.dashboard=this.appendChild(new DomElement("div",{'className':style.appButtons}));
         
         let row=this.attrs.dashboard;
         this.attrs.btn_stop=row.appendChild(new SvgButtonElement(svg.button_stop,
@@ -1918,7 +2272,7 @@ app=(function(api,components,daedalus,resources,router){
               if(daedalus.platform.isAndroid&&!!Client){
                 Client.enableTracking(false);
               }else{
-                this.handleTrackingChanged({state:"stopped"});
+                this.handleTrackingChanged({'state':"stopped"});
               }
               if(this.attrs.timer!=null){
                 clearInterval(this.attrs.timer);
@@ -1930,7 +2284,7 @@ app=(function(api,components,daedalus,resources,router){
               if(daedalus.platform.isAndroid&&!!Client){
                 Client.enableTracking(true);
               }else{
-                this.handleTrackingChanged({state:"running"});
+                this.handleTrackingChanged({'state':"running"});
               }
             }));
         this.attrs.btn_pause=row.appendChild(new SvgButtonElement(svg.button_pause,
@@ -1939,7 +2293,7 @@ app=(function(api,components,daedalus,resources,router){
                 Client.pauseTracking();
               }else{
                 console.error("backend not enabled");
-                this.handleTrackingChanged({state:"paused"});
+                this.handleTrackingChanged({'state':"paused"});
               }
             }));
         this.attrs.dashboard.addClassName(style.flex_center);
@@ -1951,10 +2305,11 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.distances1=0.0;
         this.attrs.distances2=0.0;
         if(!daedalus.platform.isAndroid){
-          const payload={uid:3,lat:42,lon:-71,distance:333*1000,samples:1234,dropped_samples:123,
-                      accurate:true,elapsed_time_ms:12*60*60*1000+34*60*1000+56*1000,current_pace_spm:4.0,
-                      average_pace_spm:.3};
+          const payload={'uid':3,'lat':42,'lon':-71,'distance':333000,'samples':1234,
+                      'dropped_samples':123,'accurate':true,'elapsed_time_ms':45296000,'current_pace_spm':4.0,
+                      'average_pace_spm':.3};
           this.handleLocationUpdate(payload);
+          ;
         }
       }
       elementMounted(){
@@ -2030,10 +2385,10 @@ app=(function(api,components,daedalus,resources,router){
         let t=fmtTime(this.attrs.elapsed_time_ms+this.attrs.time_delta);
         this.attrs.txt_time.setText(t);
       }
-    }
+    };
     class SettingsPage extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.app},[]);
+        super("div",{'className':style.app},[]);
         this.attrs.header=this.appendChild(new NavHeader());
         this.attrs.header.addAction(resources.svg.back,()=>{
             router.navigate(router.routes.landing());
@@ -2058,21 +2413,21 @@ app=(function(api,components,daedalus,resources,router){
         row.appendChild(new Text("Min. per Mile",style.smallText));
         row.appendChild(new SwitchElement());
       }
-    }
+    };
     const month_short_names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep',
           'Oct','Nov','Dec'];
     const week_long_names=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday',
           'Saturday'];
     class LogListItem extends daedalus.DomElement {
       constructor(parent,item){
-        super("div",{className:style.logItem},[]);
+        super("div",{'className':style.logItem},[]);
         this.attrs.parent=parent;
         this.attrs.item=item;
         let dt=new Date(0);
         dt.setUTCSeconds(item.start_date);
-        let col1=this.appendChild(new daedalus.DomElement("div",{className:style.logItemCol1}));
+        let col1=this.appendChild(new daedalus.DomElement("div",{'className':style.logItemCol1}));
         
-        let col2=this.appendChild(new daedalus.DomElement("div",{className:style.logItemCol2}));
+        let col2=this.appendChild(new daedalus.DomElement("div",{'className':style.logItemCol2}));
         
         let date=pad(dt.getFullYear(),2)+"/"+pad(1+dt.getMonth(),2)+"/"+pad(dt.getDate(
                     ),2);
@@ -2080,41 +2435,41 @@ app=(function(api,components,daedalus,resources,router){
         let pace=fmtPace(item.average_pace_spm*spm_to_mpk);
         let dist=(item.distance/1000.0).toFixed(3)+" k";
         let tmp;
-        tmp=col1.appendChild(new daedalus.DomElement("div",{className:style.logItemRowTitle},
+        tmp=col1.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowTitle},
                       []));
         tmp.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${month_short_names[dt.getMonth()]}`)]));
-        tmp=col1.appendChild(new daedalus.DomElement("div",{className:[style.logItemRowTitle,
+        tmp=col1.appendChild(new daedalus.DomElement("div",{'className':[style.logItemRowTitle,
                               style.dateText]},[]));
         tmp.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${pad(dt.getDate(),2)}`)]));
-        tmp=col1.appendChild(new daedalus.DomElement("div",{className:style.logItemRowTitle},
+        tmp=col1.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowTitle},
                       []));
         tmp.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${dt.getFullYear()}`)]));
-        tmp=col1.appendChild(new daedalus.DomElement("div",{className:style.logItemRowTitle},
+        tmp=col1.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowTitle},
                       []));
         tmp.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               time)]));
-        this.attrs.row2=col2.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+        this.attrs.row2=col2.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowInfo},
                       []));
         this.attrs.row2.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `Distance:`)]));
         this.attrs.row2.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${dist}`)]));
-        this.attrs.row3=col2.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+        this.attrs.row3=col2.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowInfo},
                       []));
         this.attrs.row3.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `Elapsed Time:`)]));
         this.attrs.row3.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${fmtTime(item.elapsed_time_ms)}`)]));
-        this.attrs.row4=col2.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+        this.attrs.row4=col2.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowInfo},
                       []));
         this.attrs.row4.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `Average Pace:`)]));
         this.attrs.row4.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${pace}`)]));
-        this.attrs.row5=col2.appendChild(new daedalus.DomElement("div",{className:style.logItemActions},
+        this.attrs.row5=col2.appendChild(new daedalus.DomElement("div",{'className':style.logItemActions},
                       []));
         this.attrs.row5.appendChild(new daedalus.DomElement("div"));
         this.attrs.row5.appendChild(new daedalus.ButtonElement("Details",this.handleDetailsClicked.bind(
@@ -2122,12 +2477,12 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.row5.appendChild(new daedalus.DomElement("div"));
       }
       handleDetailsClicked(){
-        router.navigate(router.routes.logEntry({entry:this.attrs.item.spk}));
+        router.navigate(router.routes.logEntry({'entry':this.attrs.item.spk}));
       }
-    }
+    };
     class LogListView extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.logView},[]);
+        super("div",{'className':style.logView},[]);
       }
       clear(){
         this.removeChildren();
@@ -2135,10 +2490,10 @@ app=(function(api,components,daedalus,resources,router){
       addItem(item){
         this.appendChild(new LogListItem(this,item));
       }
-    }
+    };
     class LogPage extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.app},[]);
+        super("div",{'className':style.app},[]);
         this.attrs.header=this.appendChild(new NavHeader());
         this.attrs.header.addAction(resources.svg.back,()=>{
             router.navigate(router.routes.landing());
@@ -2151,6 +2506,7 @@ app=(function(api,components,daedalus,resources,router){
               try{
                 let srecords=Client.getRecords();
                 accept(JSON.parse(srecords));
+                ;
               }catch(e){
                 reject(""+e);
               };
@@ -2166,6 +2522,7 @@ app=(function(api,components,daedalus,resources,router){
           this.attrs.view.addItem(sample);
           this.attrs.view.addItem(sample);
           this.attrs.view.addItem(sample);
+          ;
         }
       }
       receiveRecords(records){
@@ -2174,17 +2531,17 @@ app=(function(api,components,daedalus,resources,router){
             this.attrs.view.addItem(item);
           });
       }
-    }
+    };
     class Map extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.map},[]);
+        super("div",{'className':style.map},[]);
         this.attrs.routes=[];
       }
       displayMap(bounds){
         this.attrs.map=L.map(this.props.id);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                  {attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                      subdomains:'abcd',maxZoom:19}).addTo(this.attrs.map);
+                  {'attribution':'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                      'subdomains':'abcd','maxZoom':19}).addTo(this.attrs.map);
         this.attrs.map.fitBounds(bounds);
       }
       displayRoute(segments){
@@ -2196,9 +2553,10 @@ app=(function(api,components,daedalus,resources,router){
         try{
           this._displaySegment(segments[0],spm_color_map[0]);
           for(let i=segments.length-1;i>0;i--)
-            {
-              this._displaySegment(segments[i],spm_color_map[i]);
-            }
+          {
+            this._displaySegment(segments[i],spm_color_map[i]);
+          }
+          ;
         }catch(err){
           console.error(""+err);
         };
@@ -2210,33 +2568,35 @@ app=(function(api,components,daedalus,resources,router){
                   return[p[0],p[1]];
                 });
             });
-          let route=L.polyline(segment,{color:color,weight:4}).addTo(this.attrs.map);
+          let route=L.polyline(segment,{'color':color,'weight':4}).addTo(this.attrs.map);
           
           this.attrs.routes.push(route);
+          ;
         }
       }
-    }
+    };
     function pt(x,y){
-      return{x,y};
-    }
+      return{'x':x,'y':y};
+    };
     class LineChart extends daedalus.DomElement {
       constructor(){
-        super("canvas",{className:style.chart},[]);
+        super("canvas",{'className':style.chart},[]);
         this.attrs.chart=null;
         this.attrs.data=null;
       }
       getSettings(){
-        return{type:["line"],data:{datasets:[{label:"Average Pace",data:[],backgroundColor:"#000000",
-                              borderColor:"#000000",pointRadius:0,borderWidth:2,fill:false,yAxisID:"y_pace"},
-                          {label:"Current Pace",data:[],backgroundColor:"#008000",borderColor:"#008000",
-                              pointRadius:0,borderWidth:2,fill:false,yAxisID:"y_pace"},{label:"Altitude",
-                              data:[],backgroundColor:"#000080",borderColor:"#000080",pointRadius:0,
-                              borderWidth:2,fill:false,yAxisID:"y_alt"}]},options:{scales:{xAxes:[
-                              {type:'linear',position:'bottom',ticks:{beginAtZero:false,callback:(
-                                          value,index,values)=>fmtTime(value*1000)}}],yAxes:[{id:'y_pace',
-                                  display:true,position:"left",type:'linear',ticks:{beginAtZero:false}},
-                              {id:'y_alt',display:true,position:"right",type:'linear',ticks:{beginAtZero:false}}]}}};
-        
+        return{'type':["line"],'data':{'datasets':[{'label':"Average Pace",'data':[
+                                ],'backgroundColor':"#000000",'borderColor':"#000000",'pointRadius':0,
+                              'borderWidth':2,'fill':false,'yAxisID':"y_pace"},{'label':"Current Pace",
+                              'data':[],'backgroundColor':"#008000",'borderColor':"#008000",'pointRadius':0,
+                              'borderWidth':2,'fill':false,'yAxisID':"y_pace"},{'label':"Altitude",
+                              'data':[],'backgroundColor':"#000080",'borderColor':"#000080",'pointRadius':0,
+                              'borderWidth':2,'fill':false,'yAxisID':"y_alt"}]},'options':{'scales':{
+                          'xAxes':[{'type':'linear','position':'bottom','ticks':{'beginAtZero':false,
+                                      'callback':(value,index,values)=>fmtTime(value*1000)}}],'yAxes':[
+                              {'id':'y_pace','display':true,'position':"left",'type':'linear','ticks':{
+                                      'beginAtZero':false}},{'id':'y_alt','display':true,'position':"right",
+                                  'type':'linear','ticks':{'beginAtZero':false}}]}}};
       }
       elementMounted(){
         if(this.attrs.chart===null){
@@ -2245,6 +2605,7 @@ app=(function(api,components,daedalus,resources,router){
           if(this.attrs.data!==null){
             this.setData(this.attrs.data);
           }
+          ;
         }
       }
       elementUnmounted(){
@@ -2260,18 +2621,19 @@ app=(function(api,components,daedalus,resources,router){
           ds[1].data=data[1];
           ds[2].data=data[2];
           this.attrs.chart.update();
+          ;
         }
         this.attrs.data=data;
       }
-    }
+    };
     class TrackBarTrack extends DomElement {
       constructor(){
-        super("div",{className:style.trackBar_bar},[]);
+        super("div",{'className':style.trackBar_bar},[]);
       }
-    }
+    };
     class TrackBarButton extends DomElement {
       constructor(img){
-        super("div",{className:[style.trackBar_button]},[]);
+        super("div",{'className':[style.trackBar_button]},[]);
         this.attrs.img=img;
       }
       elementMounted(){
@@ -2279,25 +2641,26 @@ app=(function(api,components,daedalus,resources,router){
         nd.style['background-image']="url("+this.attrs.img+")";
         nd.style['background-size']="contain";
       }
-    }
+    };
     class TrackBarText extends DomElement {
       constructor(position){
-        super("div",{className:[position?style.trackBar_text_right:style.trackBar_text_left]},
+        super("div",{'className':[position?style.trackBar_text_right:style.trackBar_text_left]},
                   []);
         this.attrs.text=this.appendChild(new daedalus.TextElement("00:00"));
       }
       setText(text){
         this.attrs.text.setText(text);
       }
-    }
+    };
     class TrackBar extends DomElement {
       constructor(callback){
-        super("div",{className:style.trackBar},[]);
-        this.attrs={callback,pressed:false,posA:0,posB:0,maximum:1.0,tposA:0,tposB:0,
-                  startx:[0,0],track:this.appendChild(new TrackBarTrack()),btnMin:this.appendChild(
-                      new TrackBarButton(resources.svg.marker_L)),btnMax:this.appendChild(new TrackBarButton(
-                          resources.svg.marker_R)),txtLeft:this.appendChild(new TrackBarText(
-                          0)),txtRight:this.appendChild(new TrackBarText(1)),active_btn:-1};
+        super("div",{'className':style.trackBar},[]);
+        this.attrs={'callback':callback,'pressed':false,'posA':0,'posB':0,'maximum':1.0,
+                  'tposA':0,'tposB':0,'startx':[0,0],'track':this.appendChild(new TrackBarTrack(
+                        )),'btnMin':this.appendChild(new TrackBarButton(resources.svg.marker_L)),
+                  'btnMax':this.appendChild(new TrackBarButton(resources.svg.marker_R)),'txtLeft':this.appendChild(
+                      new TrackBarText(0)),'txtRight':this.appendChild(new TrackBarText(1)),
+                  'active_btn':-1};
       }
       setTrackColor(color){
         let nd=this.attrs.track.getDomNode();
@@ -2412,6 +2775,8 @@ app=(function(api,components,daedalus,resources,router){
           if(this.attrs.callback){
             this.attrs.callback(p1,p2);
           }
+          ;
+          ;
         }else{
           btnMin.style.left=this.attrs.startx[0];
           btnMax.style.left=this.attrs.startx[1];
@@ -2447,6 +2812,10 @@ app=(function(api,components,daedalus,resources,router){
           }else{
             this.attrs.active_btn=1;
           }
+          ;
+          ;
+          ;
+          ;
         }
         let btn;
         if(this.attrs.active_btn===0){
@@ -2487,7 +2856,7 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.txtLeft.setText(fmtTime(ts));
         this.attrs.txtRight.setText(fmtTime(te));
       }
-    }
+    };
     function points2segments(points,start,end){
       const N_SEGMENTS=10;
       if(start===undefined||start<0){
@@ -2498,9 +2867,10 @@ app=(function(api,components,daedalus,resources,router){
       }
       const segments=[];
       for(let j=0;j<N_SEGMENTS+1;j++)
-        {
-          segments.push([]);
-        }
+      {
+        segments.push([]);
+      }
+      ;
       let point=null;
       let prev_point=null;
       let prev_index=-1;
@@ -2509,34 +2879,40 @@ app=(function(api,components,daedalus,resources,router){
       let delta_t=0;
       let i=0;
       for(i=start;i<end;i++)
-        {
-          let[lat,lon,alt,index,d,t]=points[i];
-          point=[lat,lon];
-          if(index>0){
-            distance+=d;
-            delta_t+=t;
-          }
-          if(prev_index!==index){
-            if(prev_point!==null){
-              if(current_segment!==null&&current_segment.length>0){
-                segments[prev_index].push(current_segment);
-              }
-              current_segment=[];
-              current_segment.push(prev_point);
-              current_segment.push(point);
-              prev_index=index;
+      {
+        let[lat,lon,alt,index,d,t]=points[i];
+        point=[lat,lon];
+        if(index>0){
+          distance+=d;
+          delta_t+=t;
+        }
+        if(prev_index!==index){
+          if(prev_point!==null){
+            if(current_segment!==null&&current_segment.length>0){
+              segments[prev_index].push(current_segment);
             }
-          }else if(current_segment!==null){
+            current_segment=[];
+            current_segment.push(prev_point);
             current_segment.push(point);
             prev_index=index;
           }
-          prev_point=point;
+        }else if(current_segment!==null){
+          current_segment.push(point);
+          prev_index=index;
         }
+        prev_point=point;
+      }
+      ;
+      ;
+      ;
+      ;
+      ;
+      ;
       if(current_segment!==null&&current_segment.length>0){
         segments[prev_index].push(current_segment);
       }
       return[distance,delta_t,segments];
-    }
+    };
     function points2gradient(points,start,end){
       const N_MAX_SEGMENTS=50;
       if(start===undefined||start<0){
@@ -2548,23 +2924,34 @@ app=(function(api,components,daedalus,resources,router){
       const gradient=[];
       if(end-start<N_MAX_SEGMENTS){
         for(let i=start;i<end;i++)
-          {
-            let[lat,lon,alt,index,d,t]=points[i];
-            if(index>=0){
-              gradient.push(spm_color_map[index]);
-            }
+        {
+          let[lat,lon,alt,index,d,t]=points[i];
+          if(index>=0){
+            gradient.push(spm_color_map[index]);
           }
+        }
+        ;
+        ;
+        ;
+        ;
+        ;
+        ;
+        ;
       }else{
         let N=Math.floor((end-start)/N_MAX_SEGMENTS);
         for(let i=start;i<end;i+=N)
-          {
-            let data=points.slice(i,i+N).map(item=>item[3]).filter(v=>v>=0);
-            let index=Math.floor(data.reduce((a,b)=>a+b,0)/data.length);
-            gradient.push(spm_color_map[index]);
-          }
+        {
+          let data=points.slice(i,i+N).map(item=>item[3]).filter(v=>v>=0);
+          let index=Math.floor(data.reduce((a,b)=>a+b,0)/data.length);
+          gradient.push(spm_color_map[index]);
+        }
+        ;
+        ;
+        ;
+        ;
       }
       return`linear-gradient(90deg, ${gradient.join(",")})`;
-    }
+    };
     function filt(b){
       const values=[];
       let mapfn=(v,i)=>v*b[i];
@@ -2582,7 +2969,7 @@ app=(function(api,components,daedalus,resources,router){
       };
       fn.size=b.length;
       return fn;
-    }
+    };
     function points2pace2(points,start,end){
       if(start===undefined||start<0){
         start=0;
@@ -2600,23 +2987,35 @@ app=(function(api,components,daedalus,resources,router){
       let i;
       if(points.length>0){
         for(i=0;i<filter.size;i++)
-          {
-            let[lat,lon,alt,index,d,t]=points[1];
-            filter((d>1e-6)?(t/1000.0/d):0.0);
-            filter2(alt);
-          }
-      }
-      for(i=0;i<start;i++)
         {
-          let[lat,lon,alt,index,d,t]=points[i];
-          if(index<1){
-            continue;
-          }
-          distance+=d;
-          elapsed_time+=t;
+          let[lat,lon,alt,index,d,t]=points[1];
           filter((d>1e-6)?(t/1000.0/d):0.0);
           filter2(alt);
         }
+        ;
+        ;
+        ;
+        ;
+        ;
+        ;
+      }
+      for(i=0;i<start;i++)
+      {
+        let[lat,lon,alt,index,d,t]=points[i];
+        if(index<1){
+          continue;
+        }
+        distance+=d;
+        elapsed_time+=t;
+        filter((d>1e-6)?(t/1000.0/d):0.0);
+        filter2(alt);
+      }
+      ;
+      ;
+      ;
+      ;
+      ;
+      ;
       const ts=elapsed_time;
       let N_POINTS=200;
       let N=end-start;
@@ -2625,41 +3024,56 @@ app=(function(api,components,daedalus,resources,router){
         step=1;
       }
       for(i=start;i<end;i+=step)
+      {
+        let ad=0.0;
+        let at=0;
+        let ap=0;
+        let aa=0.0;
+        let n=0;
+        for(let j=i;j<end&&j<i+step;j++)
         {
-          let ad=0.0;
-          let at=0;
-          let ap=0;
-          let aa=0.0;
-          let n=0;
-          for(let j=i;j<end&&j<i+step;j++)
-            {
-              let[lat,lon,alt,index,d,t]=points[i];
-              if(index<1){
-                continue;
-              }
-              ad+=d;
-              at+=t;
-              ap+=filter((d>1e-6)?(t/1000.0/d):0.0);
-              aa+=filter2(alt);
-              n+=1;
-            }
-          distance+=ad;
-          elapsed_time+=at;
-          if(n>0){
-            let x=elapsed_time/1000.0;
-            let y1=(distance>1e-6)?((elapsed_time/1000.0)/distance):0.0;
-            let y2=ap/n;
-            dataset0.push(pt(x,y1*spm_to_mpk));
-            dataset1.push(pt(x,y2*spm_to_mpk));
-            dataset2.push(pt(x,aa/n));
+          let[lat,lon,alt,index,d,t]=points[i];
+          if(index<1){
+            continue;
           }
+          ad+=d;
+          at+=t;
+          ap+=filter((d>1e-6)?(t/1000.0/d):0.0);
+          aa+=filter2(alt);
+          n+=1;
         }
+        ;
+        ;
+        ;
+        ;
+        ;
+        ;
+        ;
+        distance+=ad;
+        elapsed_time+=at;
+        if(n>0){
+          let x=elapsed_time/1000.0;
+          let y1=(distance>1e-6)?((elapsed_time/1000.0)/distance):0.0;
+          let y2=ap/n;
+          dataset0.push(pt(x,y1*spm_to_mpk));
+          dataset1.push(pt(x,y2*spm_to_mpk));
+          dataset2.push(pt(x,aa/n));
+          ;
+          ;
+          ;
+        }
+      }
+      ;
+      ;
+      ;
+      ;
+      ;
       const te=elapsed_time;
-      return{data:[dataset0,dataset1,dataset2],ts,te};
-    }
+      return{'data':[dataset0,dataset1,dataset2],'ts':ts,'te':te};
+    };
     class LogEntryPage extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.app},[]);
+        super("div",{'className':style.app},[]);
         this.attrs.menu=new components.MoreMenu(this.handleMenuClose.bind(this));
         
         this.attrs.menu.addAction("Delete",()=>{
@@ -2685,7 +3099,7 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.map=this.appendChild(new Map());
         this.attrs.track=this.appendChild(new TrackBar(this.handleUpdateData.bind(
                           this)));
-        this.attrs.lst=this.appendChild(new daedalus.DomElement("div",{className:style.logEntryView},
+        this.attrs.lst=this.appendChild(new daedalus.DomElement("div",{'className':style.logEntryView},
                       []));
         this.appendChild(new components.VSpacer("2em"));
         this.attrs.linechart=this.appendChild(new LineChart());
@@ -2694,19 +3108,19 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.txt_elapsed=new daedalus.TextElement('----');
         this.attrs.txt_avg_pace=new daedalus.TextElement('----');
         this.attrs.row2=this.attrs.lst.appendChild(new daedalus.DomElement("div",
-                      {className:style.logItemRowInfo},[]));
+                      {'className':style.logItemRowInfo},[]));
         this.attrs.row2.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `Distance:`)]));
         this.attrs.row2.appendChild(new daedalus.DomElement("div",{},[this.attrs.txt_distance]));
         
         this.attrs.row3=this.attrs.lst.appendChild(new daedalus.DomElement("div",
-                      {className:style.logItemRowInfo},[]));
+                      {'className':style.logItemRowInfo},[]));
         this.attrs.row3.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `Elapsed Time:`)]));
         this.attrs.row3.appendChild(new daedalus.DomElement("div",{},[this.attrs.txt_elapsed]));
         
         this.attrs.row4=this.attrs.lst.appendChild(new daedalus.DomElement("div",
-                      {className:style.logItemRowInfo},[]));
+                      {'className':style.logItemRowInfo},[]));
         this.attrs.row4.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `Average Pace:`)]));
         this.attrs.row4.appendChild(new daedalus.DomElement("div",{},[this.attrs.txt_avg_pace]));
@@ -2718,13 +3132,14 @@ app=(function(api,components,daedalus,resources,router){
               try{
                 let srecords=Client.getLogEntry(this.state.match.entry);
                 accept(JSON.parse(srecords));
+                ;
               }catch(e){
                 reject(""+e);
               };
             }).then(this.setData.bind(this)).catch(console.error);
         }else{
           const sample={"spk":0,"start_date":0,"num_splits":1,"elapsed_time_ms":1234000,
-                      "distance":3200.18888,"average_pace_spm":.5,"log_path":"",points:[]};
+                      "distance":3200.18888,"average_pace_spm":.5,"log_path":"",'points':[]};
           
           let N=1800;
           let lat=40;
@@ -2732,15 +3147,22 @@ app=(function(api,components,daedalus,resources,router){
           let alt=900;
           sample.points.push([lat,lon,alt,-1,0.0,0]);
           for(let i=0;i<N;i++)
-            {
-              let index=1+Math.floor(10*i/N);
-              lat+=1e-5*(Math.random()*10)*((i>N/2)?-1:1);
-              lon-=1e-5*(Math.random()*10);
-              alt+=(6-(Math.random()*10));
-              sample.points.push([lat,lon,alt,index,8-2*i/N+Math.random()*.5,2000]);
-              
-            }
+          {
+            let index=1+Math.floor(10*i/N);
+            lat+=1e-5*(Math.random()*10)*((i>N/2)?-1:1);
+            lon-=1e-5*(Math.random()*10);
+            alt+=(6-(Math.random()*10));
+            sample.points.push([lat,lon,alt,index,8-2*i/N+Math.random()*.5,2000]);
+            
+          }
+          ;
+          ;
           this.setData(sample);
+          ;
+          ;
+          ;
+          ;
+          ;
         }
       }
       setData(data){
@@ -2752,6 +3174,8 @@ app=(function(api,components,daedalus,resources,router){
           this.attrs.map.displayMap(bounds);
           this.attrs.track.setPosition(0,data.points.length,data.points.length);
           this.handleUpdateData(0,data.points.length);
+          ;
+          ;
         }else{
           console.error("no data");
         }
@@ -2776,26 +3200,26 @@ app=(function(api,components,daedalus,resources,router){
       handleMenuClose(){
 
       }
-    }
-    let DistanceCtrl=L.Control.extend({onAdd:function(map){
+    };
+    let DistanceCtrl=L.Control.extend({'onAdd':function(map){
           var el=L.DomUtil.create('div','leaflet-bar my-control');
           el.innerHTML='Distance: 0.000k';
           el.style['font-size']="1.5em";
           el.style.padding=".5em";
           el.style['background-color']="white";
           return el;
-        },onRemove:function(map){
+        },'onRemove':function(map){
 
-        },setDistance:function(distance){
+        },'setDistance':function(distance){
           this.getContainer().innerHTML=""+distance;
         }});
     class DistanceMap extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.map2},[]);
-        this.attrs={markers:[],segments:[],icon:{start:L.icon({iconUrl:resources.png.map_start,
-                              iconSize:[24,24],iconAnchor:[12,12]}),midpoint:L.icon({iconUrl:resources.png.map_point,
-                              iconSize:[24,24],iconAnchor:[12,12]}),end:L.icon({iconUrl:resources.png.map_end,
-                              iconSize:[24,24],iconAnchor:[12,12]})}};
+        super("div",{'className':style.map2},[]);
+        this.attrs={'markers':[],'segments':[],'icon':{'start':L.icon({'iconUrl':resources.png.map_start,
+                              'iconSize':[24,24],'iconAnchor':[12,12]}),'midpoint':L.icon({'iconUrl':resources.png.map_point,
+                              'iconSize':[24,24],'iconAnchor':[12,12]}),'end':L.icon({'iconUrl':resources.png.map_end,
+                              'iconSize':[24,24],'iconAnchor':[12,12]})}};
         this.attrs.ptopt_add=true;
         this.attrs.ptopt_remove=true;
         this.attrs.ptopt_split=true;
@@ -2805,8 +3229,8 @@ app=(function(api,components,daedalus,resources,router){
         const pt=api.getLastKnownLocation();
         this.attrs.map=L.map(this.props.id).setView([pt.lat,pt.lon],14);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                  {attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                      subdomains:'abcd',maxZoom:19}).addTo(this.attrs.map);
+                  {'attribution':'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                      'subdomains':'abcd','maxZoom':19}).addTo(this.attrs.map);
         this.attrs.ptnd_add=this.addControl(resources.svg.map_add,"Add Markers",this.handlePtAddClicked.bind(
                       this));
         this.attrs.ptnd_remove=this.addControl(resources.svg.map_remove,"Remove Markers",
@@ -2816,7 +3240,7 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.ptnd_close=this.addControl(resources.svg.map_close,"Close Loop",
                   this.handlePtCloseClicked.bind(this));
         this.attrs.map.on('click',this.handleMapClick.bind(this));
-        this.attrs.distance_ctrl=new DistanceCtrl({position:'topright'});
+        this.attrs.distance_ctrl=new DistanceCtrl({'position':'topright'});
         this.attrs.distance_ctrl.addTo(this.attrs.map);
         this.attrs.ptnd_add.style['background']=this.attrs.ptopt_add?'#999999':'#FFFFFF';
         
@@ -2851,7 +3275,7 @@ app=(function(api,components,daedalus,resources,router){
         L.DomEvent.stopPropagation(e);
       }
       createMarker(pt){
-        let newMarker=new L.marker(pt,{draggable:true,autoPan:true,icon:this.attrs.icon.end}).addTo(
+        let newMarker=new L.marker(pt,{'draggable':true,'autoPan':true,'icon':this.attrs.icon.end}).addTo(
                   this.attrs.map);
         newMarker.on('click',(e)=>{
             this.handleMarkerClick(newMarker,e);
@@ -2875,9 +3299,10 @@ app=(function(api,components,daedalus,resources,router){
         if(this.attrs.markers.length>1){
           this.attrs.markers[0].setIcon(this.attrs.icon.start);
           for(let i=1;i<this.attrs.markers.length-1;i++)
-            {
-              this.attrs.markers[i].setIcon(this.attrs.icon.midpoint);
-            }
+          {
+            this.attrs.markers[i].setIcon(this.attrs.icon.midpoint);
+          }
+          ;
         }
         if(this.attrs.markers.length>2){
           this.attrs.markers[this.attrs.markers.length-1].setIcon(this.attrs.icon.end);
@@ -2891,27 +3316,34 @@ app=(function(api,components,daedalus,resources,router){
         }
         let d=0;
         for(let i=1;i<this.attrs.markers.length;i++)
-          {
-            let p1=this.attrs.markers[i-1].getLatLng();
-            let p2=this.attrs.markers[i].getLatLng();
-            let newSegment=L.polyline([p1,p2],{color:'#000',weight:7}).addTo(this.attrs.map);
-            
-            newSegment.on('click',(e)=>{
-                this.handleSegmentClick(i,e);
-              });
-            this.attrs.segments.push(newSegment);
-            d+=api.geo_distance(p1.lat,p1.lng,p2.lat,p2.lng);
-          }
-        if(this.attrs.ptopt_close&&this.attrs.markers.length>1){
-          let p1=this.attrs.markers[this.attrs.markers.length-1].getLatLng();
-          let p2=this.attrs.markers[0].getLatLng();
-          let newSegment=L.polyline([p1,p2],{color:'#000',weight:7}).addTo(this.attrs.map);
+        {
+          let p1=this.attrs.markers[i-1].getLatLng();
+          let p2=this.attrs.markers[i].getLatLng();
+          let newSegment=L.polyline([p1,p2],{'color':'#000','weight':7}).addTo(this.attrs.map);
           
           newSegment.on('click',(e)=>{
               this.handleSegmentClick(i,e);
             });
           this.attrs.segments.push(newSegment);
           d+=api.geo_distance(p1.lat,p1.lng,p2.lat,p2.lng);
+        }
+        ;
+        ;
+        ;
+        ;
+        if(this.attrs.ptopt_close&&this.attrs.markers.length>1){
+          let p1=this.attrs.markers[this.attrs.markers.length-1].getLatLng();
+          let p2=this.attrs.markers[0].getLatLng();
+          let newSegment=L.polyline([p1,p2],{'color':'#000','weight':7}).addTo(this.attrs.map);
+          
+          newSegment.on('click',(e)=>{
+              this.handleSegmentClick(i,e);
+            });
+          this.attrs.segments.push(newSegment);
+          d+=api.geo_distance(p1.lat,p1.lng,p2.lat,p2.lng);
+          ;
+          ;
+          ;
         }
         this.attrs.distance_ctrl.setDistance("Distance: "+d.toFixed(3)+"k");
       }
@@ -2953,10 +3385,10 @@ app=(function(api,components,daedalus,resources,router){
         
         this.repaintSegments();
       }
-    }
+    };
     class RoutePlanPage extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.app},[]);
+        super("div",{'className':style.app},[]);
         this.attrs.header=this.appendChild(new NavHeader());
         this.attrs.header.addAction(resources.svg.back,()=>{
             router.navigate(router.routes.landing());
@@ -2966,69 +3398,69 @@ app=(function(api,components,daedalus,resources,router){
       elementMounted(){
         this.attrs.map.displayMap();
       }
-    }
+    };
     class PostalCodeListItem extends daedalus.DomElement {
       constructor(code){
-        super("div",{className:style.nwsItem},[]);
-        let col2=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColGrow}));
+        super("div",{'className':style.nwsItem},[]);
+        let col2=this.appendChild(new daedalus.DomElement("div",{'className':style.nwsItemColGrow}));
         
         let row;
-        row=col2.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+        row=col2.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowInfo},
                       []));
         row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${code}`)]));
       }
-    }
+    };
     class NwsForecastHourItem extends daedalus.DomElement {
       constructor(parent,item){
-        super("div",{className:style.nwsItem},[]);
+        super("div",{'className':style.nwsItem},[]);
         this.attrs.parent=parent;
         this.attrs.item=item;
-        let col1=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColImage}));
+        let col1=this.appendChild(new daedalus.DomElement("div",{'className':style.nwsItemColImage}));
         
-        let colTime=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColTime}));
+        let colTime=this.appendChild(new daedalus.DomElement("div",{'className':style.nwsItemColTime}));
         
-        let col2=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColGrow}));
+        let col2=this.appendChild(new daedalus.DomElement("div",{'className':style.nwsItemColGrow}));
         
-        let colTmp=this.appendChild(new daedalus.DomElement("div",{className:style.nwsItemColFixed}));
+        let colTmp=this.appendChild(new daedalus.DomElement("div",{'className':style.nwsItemColFixed}));
         
         let tmp;
         let row;
         let dt=new Date(item.startTime);
-        col1.appendChild(new daedalus.DomElement("img",{src:item.icon,width:64,height:64},
-                      []));
-        row=colTime.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+        col1.appendChild(new daedalus.DomElement("img",{'src':item.icon,'width':64,
+                          'height':64},[]));
+        row=colTime.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowInfo},
                       []));
         row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${pad(dt.getHours(),2,'\xa0')}:${pad(dt.getMinutes(),2)}`)]));
-        row=colTmp.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+        row=colTmp.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowInfo},
                       []));
         row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${item.temperature} ${item.temperatureUnit}`)]));
-        row=col2.appendChild(new daedalus.DomElement("div",{className:style.logItemRowInfo},
+        row=col2.appendChild(new daedalus.DomElement("div",{'className':style.logItemRowInfo},
                       []));
         row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${item.shortForecast}`)]));
       }
-    }
+    };
     class NwsForecastDayItem extends daedalus.DomElement {
       constructor(parent,day){
-        super("div",{className:style.nwsDay},[]);
+        super("div",{'className':style.nwsDay},[]);
         this.attrs.parent=parent;
         this.attrs.day=day;
-        let col2=this.appendChild(new daedalus.DomElement("div",{className:style.nwsDayColGrow}));
+        let col2=this.appendChild(new daedalus.DomElement("div",{'className':style.nwsDayColGrow}));
         
         let tmp;
         let row;
         let date=pad(day.year,2)+"/"+pad(day.month,2)+"/"+pad(day.day,2);
-        row=col2.appendChild(new daedalus.DomElement("div",{className:style.nwsDayRowInfo},
+        row=col2.appendChild(new daedalus.DomElement("div",{'className':style.nwsDayRowInfo},
                       []));
-        row.appendChild(new daedalus.DomElement("div",{className:style.nwsDayRowInfoLeft},
+        row.appendChild(new daedalus.DomElement("div",{'className':style.nwsDayRowInfoLeft},
                       [new daedalus.TextElement(day.weekday)]));
         row.appendChild(new daedalus.DomElement("div",{},[new daedalus.TextElement(
                               `${date}`)]));
-        row.appendChild(new daedalus.DomElement("div",{className:style.nwsDayRowInfoRight},
-                      [new daedalus.TextElement(`\u2191 ${day.temperature.hi} ${day.temperature.unit}\xa0\u2193 ${day.temperature.lo} ${day.temperature.unit}`)]));
+        row.appendChild(new daedalus.DomElement("div",{'className':style.nwsDayRowInfoRight},
+                      [new daedalus.TextElement(`\u2191${day.temperature.hi} ${day.temperature.unit}\xa0\u2193${day.temperature.lo} ${day.temperature.unit}`)]));
         
       }
       onClick(){
@@ -3042,10 +3474,10 @@ app=(function(api,components,daedalus,resources,router){
             
           });
       }
-    }
+    };
     class SampleListView extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.logView},[]);
+        super("div",{'className':style.logView},[]);
       }
       clear(){
         this.removeChildren();
@@ -3073,10 +3505,10 @@ app=(function(api,components,daedalus,resources,router){
               });
           });
       }
-    }
+    };
     class WeatherDashboard extends daedalus.DomElement {
       constructor(parent){
-        super("div",{className:style.weatherCtrl},[]);
+        super("div",{'className':style.weatherCtrl},[]);
         this.attrs.parent=parent;
         this.attrs.input_code=this.appendChild(new daedalus.TextInputElement("00000"));
         
@@ -3100,10 +3532,11 @@ app=(function(api,components,daedalus,resources,router){
       handleMinimize(){
         this.attrs.parent.minimizeForecast();
       }
-    }
+    };
     class WeatherError extends daedalus.DomElement {
       constructor(parent){
-        super("div",{className:[style.weatherError,style.weatherErrorHide]},[]);
+        super("div",{'className':[style.weatherError,style.weatherErrorHide]},[]);
+        
         this.attrs.text=this.appendChild(new daedalus.TextElement("error"));
       }
       show(text){
@@ -3114,10 +3547,10 @@ app=(function(api,components,daedalus,resources,router){
         console.log("hide");
         this.addClassName(style.weatherErrorHide);
       }
-    }
+    };
     class WeatherPage extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.app},[]);
+        super("div",{'className':style.app},[]);
         this.attrs.header=this.appendChild(new NavHeader());
         this.attrs.header.addAction(resources.svg.back,()=>{
             router.navigate(router.routes.landing());
@@ -3169,6 +3602,7 @@ app=(function(api,components,daedalus,resources,router){
               this.attrs.error.show(str);
               console.log(error);
             });
+          ;
         }
       }
       changeLocationByPostalCode(postal_code){
@@ -3188,7 +3622,7 @@ app=(function(api,components,daedalus,resources,router){
       }
       handleGetEndpoints(props){
         console.log(props);
-        let info={id:props.gridId,x:props.gridX,y:props.gridY};
+        let info={'id':props.gridId,'x':props.gridX,'y':props.gridY};
         api.nwsGetHourlyForecast(info.id,info.x,info.y).then(result=>{
             this.handleGetHourlyForecast(result.properties);
           }).catch(error=>{
@@ -3209,54 +3643,58 @@ app=(function(api,components,daedalus,resources,router){
         let days=[];
         let previous_day=-1;
         for(let i=0;i<periods.length;i++)
-          {
-            let item=periods[i];
-            let dt=new Date(item.startTime);
-            if(dt.getDay()!==previous_day){
-              let day={year:dt.getFullYear(),month:1+dt.getMonth(),day:dt.getDate(
-                                ),weekday:week_long_names[dt.getDay()],temperature:{hi:0,lo:200,unit:item.temperatureUnit},
-                              data:[]};
-              days.push(day);
-              previous_day=dt.getDay();
-            }
-            if(item.temperature>days[days.length-1].temperature.hi){
-              days[days.length-1].temperature.hi=item.temperature;
-            }
-            if(item.temperature<days[days.length-1].temperature.lo){
-              days[days.length-1].temperature.lo=item.temperature;
-            }
-            days[days.length-1].data.push(item);
+        {
+          let item=periods[i];
+          let dt=new Date(item.startTime);
+          if(dt.getDay()!==previous_day){
+            let day={'year':dt.getFullYear(),'month':1+dt.getMonth(),'day':dt.getDate(
+                            ),'weekday':week_long_names[dt.getDay()],'temperature':{'hi':0,'lo':200,
+                              'unit':item.temperatureUnit},'data':[]};
+            days.push(day);
+            previous_day=dt.getDay();
+            ;
           }
+          if(item.temperature>days[days.length-1].temperature.hi){
+            days[days.length-1].temperature.hi=item.temperature;
+          }
+          if(item.temperature<days[days.length-1].temperature.lo){
+            days[days.length-1].temperature.lo=item.temperature;
+          }
+          days[days.length-1].data.push(item);
+        }
+        ;
+        ;
+        ;
         days.forEach(day=>{
             this.attrs.list.addDay(day);
           });
       }
-    }
-    let TimeCtrl=L.Control.extend({onAdd:function(map){
+    };
+    let TimeCtrl=L.Control.extend({'onAdd':function(map){
           var el=L.DomUtil.create('div','leaflet-bar my-control');
           el.innerHTML='Distance: 0.000k';
           el.style['font-size']="1.5em";
           el.style.padding=".5em";
           el.style['background-color']="white";
           return el;
-        },onRemove:function(map){
+        },'onRemove':function(map){
 
-        },setTime:function(time){
+        },'setTime':function(time){
           this.getContainer().innerHTML=""+time;
         }});
     class RadarMap extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.map2},[]);
-        this.attrs={animation_index:0,animation_timer:null};
+        super("div",{'className':style.map2},[]);
+        this.attrs={'animation_index':0,'animation_timer':null};
       }
       displayMap(){
         const pt=api.getLastKnownLocation();
         this.attrs.map=L.map(this.props.id).setView([pt.lat,pt.lon],10);
         new L.marker(pt,{}).addTo(this.attrs.map);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                  {attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> | &copy; <a href="https://mesonet.agron.iastate.edu/ogc/">OGC</a>',
-                      subdomains:'abcd',maxZoom:19}).addTo(this.attrs.map);
-        this.attrs.time_ctrl=new TimeCtrl({position:'topright'});
+                  {'attribution':'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> | &copy; <a href="https://mesonet.agron.iastate.edu/ogc/">OGC</a>',
+                      'subdomains':'abcd','maxZoom':19}).addTo(this.attrs.map);
+        this.attrs.time_ctrl=new TimeCtrl({'position':'topright'});
         this.attrs.time_ctrl.addTo(this.attrs.map);
         this.attrs.ptnd_pp=this.addControl(resources.svg.map_pause,"Pause Animation",
                   this.handlePtPlayPauseClicked.bind(this));
@@ -3266,22 +3704,28 @@ app=(function(api,components,daedalus,resources,router){
                   this.handlePtStepBackwardClicked.bind(this));
         let radarLayers=[];
         let radarTimes=[];
-        let scale=(5*60*1000);
+        let scale=(300000);
         let now=Math.floor(Date.now()/scale)*scale;
         console.log(now);
         for(let time=50;time>5;time-=5)
-          {
-            let name='nexrad-n0q-900913-m'+pad(time,2)+'m';
-            let layer=L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi",
-                          {layers:name,format:'image/png',transparent:true,opacity:0.0});
-            radarLayers.push(layer);
-            layer.addTo(this.attrs.map);
-            let dt=new Date(now-time*60*1000);
-            radarTimes.push(`${dt.getHours()}:${pad(dt.getMinutes(),2)}`);
-          }
+        {
+          let name='nexrad-n0q-900913-m'+pad(time,2)+'m';
+          let layer=L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi",
+                      {'layers':name,'format':'image/png','transparent':true,'opacity':0.0});
+          
+          radarLayers.push(layer);
+          layer.addTo(this.attrs.map);
+          let dt=new Date(now-time*60*1000);
+          radarTimes.push(`${dt.getHours()}:${pad(dt.getMinutes(),2)}`);
+        }
+        ;
+        ;
+        ;
+        ;
         let name='nexrad-n0q-900913';
         let layer=L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi",
-                  {layers:name,format:'image/png',transparent:true,opacity:0.0});
+                  {'layers':name,'format':'image/png','transparent':true,'opacity':0.0});
+        
         radarLayers.push(layer);
         let dt=new Date(now);
         radarTimes.push(`${dt.getHours()}:${pad(dt.getMinutes(),2)}`);
@@ -3347,10 +3791,10 @@ app=(function(api,components,daedalus,resources,router){
         this.attrs.time_ctrl.setTime(this.attrs.radarTimes[this.attrs.animation_index]);
         
       }
-    }
+    };
     class WeatherRadarPage extends daedalus.DomElement {
       constructor(){
-        super("div",{className:style.app},[]);
+        super("div",{'className':style.app},[]);
         this.attrs.header=this.appendChild(new NavHeader());
         this.attrs.header.addAction(resources.svg.back,()=>{
             router.back();
@@ -3360,19 +3804,261 @@ app=(function(api,components,daedalus,resources,router){
       elementMounted(){
         this.attrs.map.displayMap();
       }
-    }
+    };
+    class DurationInputElement extends daedalus.DomElement {
+      constructor(){
+        super("input",{"type":"number"},[]);
+      }
+      setValue(value){
+        this.getDomNode().value=value;
+      }
+      getValue(value){
+        return+this.getDomNode().value;
+      }
+    };
+    const sound_cache={};
+    function playSound(url){
+      if(sound_cache[url]===undefined){
+        sound_cache[url]=new Audio(url);
+      }
+      sound_cache[url].play();
+    };
+    class RadioGroup extends daedalus.DomElement {
+      constructor(name,items,initial=0){
+        super("form",{},[]);
+        this.buttons=[];
+        items.forEach((item,index)=>{
+            const tmp=new daedalus.DomElement("input",{"type":"radio",'name':name,
+                              'value':index,'checked':index==initial},[]);
+            this.appendChild(new daedalus.DomElement("label",{"for":tmp.props.id},
+                              [tmp,new daedalus.TextElement(item)]));
+            this.buttons.push(tmp);
+          });
+      }
+      onChange(event){
+        let index=event.target.value;
+      }
+      getSelectedIndex(){
+        for(let i=0;i<this.buttons.length;i++)
+        {
+          if(this.buttons[i].getDomNode().checked){
+            return i;
+          }
+        }
+        ;
+        return 0;
+      }
+    };
+    class RoundTimerPage extends daedalus.DomElement {
+      constructor(){
+        super("div",{'className':[style.app,style.flex_spread]},[]);
+        this.attrs.header=this.appendChild(new NavHeader());
+        this.attrs.header.addAction(resources.svg.back,()=>{
+            router.navigate(router.routes.landing());
+          });
+        this.attrs.presetRow=this.appendChild(new Div(style.roundTimerPresetRow));
+        
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("2:00/0:10",(
+                        )=>{
+              this.handlePreset(0);
+            }));
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("2:00/0:30",(
+                        )=>{
+              this.handlePreset(1);
+            }));
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("3:00/0:00",(
+                        )=>{
+              this.handlePreset(2);
+            }));
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("3:00/0:30",(
+                        )=>{
+              this.handlePreset(3);
+            }));
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("3:00/0:60",(
+                        )=>{
+              this.handlePreset(4);
+            }));
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("5:00/0:60",(
+                        )=>{
+              this.handlePreset(5);
+            }));
+        this.attrs.presetRow.appendChild(new daedalus.ButtonElement("10:00/0:60",
+                      ()=>{
+              this.handlePreset(6);
+            }));
+        this.attrs.presetRow2=this.appendChild(new Div(style.paceCol));
+        this.attrs.presetRow3=this.appendChild(new Div(style.roundTimerPresetRow));
+        
+        this.attrs.presetRow3.appendChild(new Text("Audible Interval:",style.titleText));
+        
+        this.attrs.grp_interval=this.attrs.presetRow3.appendChild(new RadioGroup(
+                      "grp1",["Disabled","0:30","1:00"],1));
+        this.attrs.configRow=this.appendChild(new Div(style.roundTimerConfigureRow));
+        
+        this.attrs.roundRow=this.attrs.configRow.appendChild(new DomElement());
+        this.attrs.roundRow=this.attrs.configRow.appendChild(new Div(style.paceCol));
+        
+        this.attrs.roundRow.appendChild(new Text("Round Duration:",style.titleText));
+        
+        this.attrs.input_roundTime=this.attrs.roundRow.appendChild(new DurationInputElement(
+                    ));
+        this.attrs.roundRow=this.attrs.configRow.appendChild(new DomElement());
+        this.attrs.roundRow=this.attrs.configRow.appendChild(new Div(style.paceCol));
+        
+        this.attrs.roundRow.appendChild(new Text("Rest Duration:",style.titleText));
+        
+        this.attrs.input_restTime=this.attrs.roundRow.appendChild(new DurationInputElement(
+                    ));
+        this.attrs.roundRow=this.attrs.configRow.appendChild(new DomElement());
+        this.attrs.modeRow=this.appendChild(new Div(style.paceCol));
+        this.attrs.txt_mode=this.attrs.modeRow.appendChild(new Text("Waiting",style.smallText));
+        
+        this.attrs.roundRow=this.appendChild(new Div(style.paceCol));
+        this.attrs.roundRow.appendChild(new Text("Round:",style.titleText));
+        this.attrs.txt_round=this.attrs.roundRow.appendChild(new Text("-",style.largeText));
+        
+        this.attrs.timeRow=this.appendChild(new Div(style.paceCol));
+        this.attrs.timeRow.appendChild(new Text("Time:",style.titleText));
+        this.attrs.txt_time=this.attrs.timeRow.appendChild(new Text("0:00",style.veryLargeText));
+        
+        this.appendChild(new DomElement());
+        this.appendChild(new DomElement());
+        this.appendChild(new DomElement());
+        this.appendChild(new DomElement("div",{'style':{"height":"100px"}}));
+        this.attrs.dashboard=this.appendChild(new DomElement("div",{'className':style.appButtons}));
+        
+        let row=this.attrs.dashboard;
+        this.attrs.btn_stop=row.appendChild(new SvgButtonElement(svg.button_stop,
+                      ()=>{
+              this.stopTimer();
+            }));
+        this.attrs.btn_play=row.appendChild(new SvgButtonElement(svg.button_play,
+                      ()=>{
+              this.startTimer();
+            }));
+      }
+      elementMounted(){
+        this.handlePreset(1);
+        this.attrs.btn_stop.addClassName(style.hide);
+        this.attrs.dashboard.addClassName(style.flex_center);
+      }
+      handlePreset(index){
+        const presets=[{'round':120,'rest':10},{'round':120,'rest':30},{'round':180,
+                      'rest':0},{'round':180,'rest':30},{'round':180,'rest':60},{'round':300,
+                      'rest':60},{'round':600,'rest':60}];
+        const preset=presets[index];
+        this.attrs.input_roundTime.setValue(preset.round);
+        this.attrs.input_restTime.setValue(preset.rest);
+      }
+      stopTimer(){
+        if(daedalus.platform.isAndroid&&!!Client){
+          Client.lockDisplay(false);
+        }
+        this.attrs.txt_mode.setText("Waiting");
+        this.attrs.presetRow.removeClassName(style.hide);
+        this.attrs.presetRow2.removeClassName(style.hide);
+        this.attrs.presetRow3.removeClassName(style.hide);
+        this.attrs.configRow.removeClassName(style.hide);
+        this.attrs.btn_stop.addClassName(style.hide);
+        this.attrs.btn_play.removeClassName(style.hide);
+        if(this.attrs.timer_handle!=null){
+          clearInterval(this.attrs.timer_handle);
+          this.attrs.timer_handle=null;
+        }
+        this.attrs.txt_round.setText("-");
+        this.attrs.txt_time.setText("0:00");
+      }
+      startTimer(){
+        if(daedalus.platform.isAndroid&&!!Client){
+          Client.lockDisplay(true);
+        }
+        this.attrs.presetRow.addClassName(style.hide);
+        this.attrs.presetRow2.addClassName(style.hide);
+        this.attrs.presetRow3.addClassName(style.hide);
+        this.attrs.configRow.addClassName(style.hide);
+        this.attrs.btn_stop.removeClassName(style.hide);
+        this.attrs.btn_play.addClassName(style.hide);
+        this.attrs.timer_mode=0;
+        this.attrs.timer_config=[3000,this.attrs.input_roundTime.getValue()*1000,
+                  this.attrs.input_restTime.getValue()*1000];
+        this.attrs.timer_round_counter=1;
+        this.attrs.timer_start=new Date().getTime();
+        this.attrs.timer_duration=3000;
+        this.attrs.timer_interval=[0,30,60][this.attrs.grp_interval.getSelectedIndex(
+                )];
+        this.attrs.timer_handle=setInterval(this.handleTimeout.bind(this),100);
+        this.attrs.timer_last_sound=-1;
+        this.attrs.txt_round.setText(this.attrs.timer_round_counter);
+        this.attrs.txt_time.setText(fmtTime(this.attrs.timer_duration-1));
+        this.attrs.txt_mode.setText("Get Ready!");
+        playSound(resources.effects.snd_rest_3s);
+      }
+      handleTimeout(){
+        const now=new Date().getTime();
+        const elapsedms=now-this.attrs.timer_start;
+        const displayms=this.attrs.timer_duration-elapsedms;
+        if(displayms<0){
+          this.attrs.txt_time.setText(fmtTime(0));
+          if(this.attrs.timer_mode==0){
+            this.attrs.timer_mode=1;
+            this.attrs.txt_mode.setText("Active");
+            playSound(resources.effects.snd_round_start);
+          }else if(this.attrs.timer_mode==1){
+            if(this.attrs.timer_config[2]==0){
+              playSound(resources.effects.snd_round_start);
+            }else{
+              playSound(resources.effects.snd_round_end);
+              this.attrs.timer_mode=2;
+              this.attrs.txt_mode.setText("Rest");
+            }
+          }else if(this.attrs.timer_mode==2){
+            this.attrs.timer_mode=1;
+            this.attrs.txt_mode.setText("Active");
+            this.attrs.timer_round_counter+=1;
+            playSound(resources.effects.snd_round_start);
+          }
+          this.attrs.timer_last_sound=-1;
+          this.attrs.timer_start=new Date().getTime();
+          this.attrs.timer_duration=this.attrs.timer_config[this.attrs.timer_mode];
+          
+          this.attrs.txt_round.setText(this.attrs.timer_round_counter);
+          this.attrs.txt_time.setText(fmtTime(this.attrs.timer_duration-1));
+        }else{
+          this.attrs.txt_time.setText(fmtTime(displayms));
+          const t=Math.floor(displayms/1000);
+          if(t!==this.attrs.timer_last_sound){
+            const v=this.attrs.timer_interval;
+            if(this.attrs.timer_mode==1&&t>1&&v>0&&t%v==0){
+              playSound(resources.effects.snd_round_30s);
+              this.attrs.timer_last_sound=t;
+            }
+            if(this.attrs.timer_mode==1&&t==10){
+              playSound(resources.effects.snd_round_10s);
+              this.attrs.timer_last_sound=t;
+            }
+            if(this.attrs.timer_mode==2&&t==3){
+              playSound(resources.effects.snd_rest_3s);
+              this.attrs.timer_last_sound=t;
+            }
+            ;
+          }
+          ;
+        }
+      }
+    };
     class App extends daedalus.DomElement {
       constructor(){
         super("div",{},[]);
-        this.attrs={page_cache:{},container:new DomElement("div",{id:"app_container"},
+        this.attrs={'page_cache':{},'container':new DomElement("div",{'id':"app_container"},
                       [])};
         this.appendChild(this.attrs.container);
         const body=document.getElementsByTagName("BODY")[0];
         body.className=style.body;
         this.attrs.router=this.buildRouter(this,this.attrs.container);
-        this.handleLocationChanged();
-        this.connect(history.locationChanged,this.handleLocationChanged.bind(this));
-        
+        window.addEventListener("locationChangedEvent",(event)=>{
+            this.handleLocationChanged(event.detail.path);
+          });
+        this.handleLocationChanged(window.daedalus_location);
       }
       buildRouter(container){
         const u=router.route_urls;
@@ -3401,13 +4087,16 @@ app=(function(api,components,daedalus,resources,router){
         rt.addRoute(u.weather,(cbk)=>{
             this.handleRoute(cbk,WeatherPage);
           });
+        rt.addRoute(u.roundtimer,(cbk)=>{
+            this.handleRoute(cbk,RoundTimerPage);
+          });
         rt.setDefaultRoute((cbk)=>{
             this.handleRoute(cbk,TrackerPage);
           });
         return rt;
       }
-      handleLocationChanged(){
-        this.attrs.router.handleLocationChanged(window.location.pathname);
+      handleLocationChanged(pathname){
+        this.attrs.router.handleLocationChanged(pathname);
       }
       handleRoute(fn,page){
         if(this.attrs.page_cache[page]===undefined){
@@ -3415,6 +4104,6 @@ app=(function(api,components,daedalus,resources,router){
         }
         fn(this.attrs.page_cache[page]);
       }
-    }
-    return{App};
+    };
+    return{'App':App};
   })(api,components,daedalus,resources,router);

@@ -12,6 +12,7 @@ import com.github.nicksetzer.daedalus.runtracker2.WebActivity;
 import com.github.nicksetzer.daedalus.runtracker2.WebService;
 
 import java.io.File;
+import java.util.ArrayList;
 
 import androidx.core.content.FileProvider;
 
@@ -44,6 +45,18 @@ public class AndroidClient {
         Intent intent = new Intent(m_activity, WebService.class);
         intent.setAction(WebService.ACTION_PAUSE_TRACKING);
         m_activity.startForegroundService(intent);
+        return;
+    }
+
+    @JavascriptInterface
+    public void lockDisplay(final boolean enable) {
+
+        Handler mainHandler = new Handler(m_activity.getMainLooper());
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {m_activity.enableShowWhenLocked(enable);}
+        });
+
         return;
     }
 

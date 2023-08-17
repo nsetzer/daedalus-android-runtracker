@@ -11,3 +11,4 @@
 .externalNativeBuild
 .idea
 venv
+__pycache__/

@@ -1,4 +1,4 @@
-package com.github.nicksetzer.daedalus.runtracker;
+package com.github.nicksetzer.daedalus.runtracker2;
 
 /*
 adb pull /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus.runtracker/files/app-v2.sqlite
@@ -8,7 +8,6 @@ adb pull /storage/emulated/0/Android/data/com.github.nicksetzer.daedalus.runtrac
 import android.content.Context;
 
 import com.github.nicksetzer.metallurgy.orm.DatabaseConnection;
-import com.github.nicksetzer.metallurgy.orm.EntityTable;
 import com.github.nicksetzer.metallurgy.orm.TableSchema;
 
 public class Database {

@@ -1,4 +1,4 @@
-package com.github.nicksetzer.daedalus.runtracker;
+package com.github.nicksetzer.daedalus.runtracker2;
 
 import org.json.JSONException;
 import org.json.JSONObject;

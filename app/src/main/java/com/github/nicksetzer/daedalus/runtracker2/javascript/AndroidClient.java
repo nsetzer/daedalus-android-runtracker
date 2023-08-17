@@ -1,4 +1,4 @@
-package com.github.nicksetzer.daedalus.runtracker.javascript;
+package com.github.nicksetzer.daedalus.runtracker2.javascript;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -6,13 +6,12 @@ import android.os.Build;
 import android.os.Handler;
 import android.webkit.JavascriptInterface;
 
-import com.github.nicksetzer.daedalus.runtracker.BuildConfig;
-import com.github.nicksetzer.daedalus.runtracker.Log;
-import com.github.nicksetzer.daedalus.runtracker.WebActivity;
-import com.github.nicksetzer.daedalus.runtracker.WebService;
+import com.github.nicksetzer.daedalus.runtracker2.BuildConfig;
+import com.github.nicksetzer.daedalus.runtracker2.Log;
+import com.github.nicksetzer.daedalus.runtracker2.WebActivity;
+import com.github.nicksetzer.daedalus.runtracker2.WebService;
 
 import java.io.File;
-import java.util.ArrayList;
 
 import androidx.core.content.FileProvider;
 
@@ -125,7 +124,7 @@ public class AndroidClient {
 
                 sb.append("Here is the log from my recent run.\n\n");
                 sb.append("The columns for the csv file are:\n");
-                sb.append("  UTC-time, split_number, latitude, longitude, distance (m), delta_t (ms), isPaused?, isDropped?\n");
+                sb.append("UTC-time, split_number, latitude, longitude, altitude, distance (m), delta_t (ms), speed (m/s), accuracy, isPaused?, isDropped?\n");
 
                 intent.putExtra(Intent.EXTRA_TEXT, sb.toString());
                 intent.putExtra(Intent.EXTRA_SUBJECT, "YMMV Run Tracker Log");

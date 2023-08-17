@@ -1,8 +1,7 @@
-package com.github.nicksetzer.daedalus.runtracker;
+package com.github.nicksetzer.daedalus.runtracker2;
 
 import android.location.Location;
 import android.location.LocationListener;
-import android.os.Bundle;
 
 public class WebLocationListener implements LocationListener {
     LocationTracker m_tracker;
@@ -18,8 +17,17 @@ public class WebLocationListener implements LocationListener {
         double lat = location.getLatitude();
         double lon = location.getLongitude();
         double alt = location.getAltitude();
-        float spd = location.getSpeed(); // meters per second
-        float acc = location.getSpeedAccuracyMetersPerSecond();
+
+        float spd = 0.0F;
+        if (location.hasSpeed()) {
+            spd = location.getSpeed(); // meters per second
+        }
+
+        float acc = 0.0F;
+        if (location.hasSpeedAccuracy()) {
+            acc = location.getSpeedAccuracyMetersPerSecond();
+        }
+
         m_tracker.push(lat, lon, alt, spd, acc);
         //if (!m_tracker.isPaused()) {
         m_service.sendEvent("onlocationupdate", m_tracker.status());

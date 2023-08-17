@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".WebActivity">
 
-    <com.github.nicksetzer.daedalus.runtracker.DaedalusWebView
+    <com.github.nicksetzer.daedalus.runtracker2.DaedalusWebView
         android:id="@+id/DaedalusView"
         android:layout_width="0dp"
         android:layout_height="0dp"

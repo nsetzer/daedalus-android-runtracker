@@ -4,7 +4,7 @@ plugins {
 android {
     compileSdkVersion 33
     defaultConfig {
-        applicationId "com.github.nicksetzer.daedalus.runtracker"
+        applicationId "com.github.nicksetzer.daedalus.runtracker2"
         minSdkVersion 28
         targetSdkVersion 33
         versionCode 1

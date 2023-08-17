@@ -1,10 +1,8 @@
-package com.github.nicksetzer.daedalus.runtracker.view;
+package com.github.nicksetzer.daedalus.runtracker2.view;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.net.Uri;
 import android.net.http.SslError;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceRequest;
@@ -13,8 +11,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.webkit.WebViewAssetLoader;
-
-import com.github.nicksetzer.daedalus.runtracker.Log;
 
 public class DaedalusWebViewClient extends WebViewClient {
 

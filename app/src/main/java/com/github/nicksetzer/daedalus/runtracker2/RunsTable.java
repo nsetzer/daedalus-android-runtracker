@@ -1,4 +1,4 @@
-package com.github.nicksetzer.daedalus.runtracker;
+package com.github.nicksetzer.daedalus.runtracker2;
 
 import android.database.Cursor;
 
@@ -16,7 +16,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 

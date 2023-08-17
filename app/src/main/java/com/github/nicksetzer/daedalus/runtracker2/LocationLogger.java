@@ -1,4 +1,4 @@
-package com.github.nicksetzer.daedalus.runtracker;
+package com.github.nicksetzer.daedalus.runtracker2;
 
 /**
  * To access the run logs:
@@ -10,7 +10,6 @@ package com.github.nicksetzer.daedalus.runtracker;
  *  2020-06-01-06-27-runlog.csv
  */
 
-import android.app.PendingIntent;
 import android.content.Context;
 
 import org.json.JSONException;
@@ -22,7 +21,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 public class LocationLogger {

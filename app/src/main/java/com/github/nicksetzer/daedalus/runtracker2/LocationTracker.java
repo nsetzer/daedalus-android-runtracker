@@ -1,4 +1,4 @@
-package com.github.nicksetzer.daedalus.runtracker;
+package com.github.nicksetzer.daedalus.runtracker2;
 
 import android.content.Context;
 
@@ -130,42 +130,47 @@ public class LocationTracker {
         double distance = 0.0;
         long delta_t = 0;
         long current_time = System.currentTimeMillis();
+        boolean drop = false;
 
         if (!m_first_event) {
             distance = calculateDistanceMeters(m_current_lat, m_current_lon, lat, lon);
             delta_t = current_time - m_time_previous_sample;
+
+
+            if (!m_paused && distance < MIN_DELTA_M) {
+                drop = true;
+            }
+
+            // drop events faster than 25km/h or 7 meters per second
+            double seconds = delta_t / 1000.0;
+            if (distance > 0.0 && delta_t > 0 && distance/seconds > 7.0) {
+                drop = true;
+            }
+
         }
 
-        m_current_lat = lat;
-        m_current_lon = lon;
-        m_time_previous_sample = current_time;
+        boolean dropped = m_paused || drop;
 
-        boolean drop = false;
-
-        if (!m_paused && !m_first_event && distance < MIN_DELTA_M) {
-            drop = true;
-            m_dropped_event_counter += 1;
-        }
-
-        //if (m_loggingEnabled) {
-        m_logger.push(lat, lon, alt, current_time, delta_t, distance, spd, acc, m_current_split, m_paused, m_paused || drop);
-        //}
-
-        m_paceTracker.push(distance, delta_t);
-
-        if (m_paused || drop) {
-            return;
-        }
+        m_logger.push(lat, lon, alt, current_time, delta_t, distance, spd, acc, m_current_split, m_paused, dropped);
 
         m_event_counter += 1;
-
-        if (m_first_event) {
-            m_first_event = false;
-            m_time_start = current_time;
-
+        if (dropped) {
+            m_dropped_event_counter += 1;
         } else {
 
-            m_total_distance_meters += distance;
+            m_time_previous_sample = current_time;
+            m_current_lat = lat;
+            m_current_lon = lon;
+
+            if (m_first_event) {
+                m_first_event = false;
+                m_time_start = current_time;
+            } else {
+
+                m_paceTracker.push(distance, delta_t);
+
+                m_total_distance_meters += distance;
+            }
         }
 
         return;
@@ -224,7 +229,7 @@ public class LocationTracker {
     }
 
     public double calculateDistanceMeters(double lat1, double lon1, double lat2, double lon2) {
-
+        // https://www.movable-type.co.uk/scripts/latlong.html
         final double phi1 = lat1 * DEG2RAD;
         final double phi2 = lat2 * DEG2RAD;
 

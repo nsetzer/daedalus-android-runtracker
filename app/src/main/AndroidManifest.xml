@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.github.nicksetzer.daedalus.runtracker"
+    package="com.github.nicksetzer.daedalus.runtracker2"
     android:versionCode="1"
     android:versionName="0.9.0"
     >
@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Black.NoTitleBar">
         <activity
-            android:name=".WebActivity"
+            android:name="com.github.nicksetzer.daedalus.runtracker2.WebActivity"
             android:exported="true"
             android:label="@string/app_short_name">
             <intent-filter>
@@ -29,14 +29,14 @@
         </activity>
 
         <service
-            android:name=".WebService"
+            android:name="com.github.nicksetzer.daedalus.runtracker2.WebService"
             android:enabled="true"
             android:exported="false"
             android:permission="android.permission.FOREGROUND_SERVICE">
         </service>
 
         <provider
-            android:name=".LogProvider"
+            android:name="com.github.nicksetzer.daedalus.runtracker2.LogProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">

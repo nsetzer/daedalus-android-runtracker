@@ -1,4 +1,4 @@
-package com.github.nicksetzer.daedalus.runtracker;
+package com.github.nicksetzer.daedalus.runtracker2;
 
 import android.Manifest;
 import android.app.Activity;
@@ -14,10 +14,10 @@ import android.os.IBinder;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.github.nicksetzer.daedalus.runtracker.javascript.AndroidClient;
-import com.github.nicksetzer.daedalus.runtracker.javascript.LocalStorage;
-import com.github.nicksetzer.daedalus.runtracker.view.DaedalusWebChromeClient;
-import com.github.nicksetzer.daedalus.runtracker.view.DaedalusWebViewClient;
+import com.github.nicksetzer.daedalus.runtracker2.javascript.AndroidClient;
+import com.github.nicksetzer.daedalus.runtracker2.javascript.LocalStorage;
+import com.github.nicksetzer.daedalus.runtracker2.view.DaedalusWebChromeClient;
+import com.github.nicksetzer.daedalus.runtracker2.view.DaedalusWebViewClient;
 
 public class WebActivity extends Activity {
 

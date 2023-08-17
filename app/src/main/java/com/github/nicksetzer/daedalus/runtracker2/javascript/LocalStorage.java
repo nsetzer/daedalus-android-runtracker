@@ -1,11 +1,11 @@
-package com.github.nicksetzer.daedalus.runtracker.javascript;
+package com.github.nicksetzer.daedalus.runtracker2.javascript;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.webkit.JavascriptInterface;
 
-import com.github.nicksetzer.daedalus.runtracker.Log;
+import com.github.nicksetzer.daedalus.runtracker2.Log;
 
 public class LocalStorage {
     private Activity m_activity;

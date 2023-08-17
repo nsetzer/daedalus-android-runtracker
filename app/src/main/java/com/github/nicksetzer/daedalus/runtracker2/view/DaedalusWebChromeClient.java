@@ -1,4 +1,4 @@
-package com.github.nicksetzer.daedalus.runtracker.view;
+package com.github.nicksetzer.daedalus.runtracker2.view;
 
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
